@@ -1,5 +1,7 @@
-import { FILES, INITIAL_NOTES, filePath } from '$lib/mock/data';
-import type { Note, PrTab, ReviewDecision, ReviewMode, SidePanelTab } from '$lib/types';
+import { getLiveDiff } from '$lib/backend';
+import { FILES, INITIAL_NOTES } from '$lib/mock/data';
+import type { DiffLine, FileEntry, Note, PrTab, ReviewDecision, ReviewMode, SidePanelTab } from '$lib/types';
+import { filePath } from '$lib/types';
 
 // Single reactive store for the one open project tab. Mirrors the design's
 // Component.state — kept as one class because every panel in this layout
@@ -19,6 +21,31 @@ export class ReviewState {
 	composerText = $state('');
 	notes = $state<Note[]>(INITIAL_NOTES);
 	#nextNoteId = 3;
+
+	// Real workdir-vs-HEAD diff from the Rust backend (git2) — Live mode and
+	// the always-visible file tree read from these, not from mock data.
+	// PR/History/Blame stay mock until GitHub/log integration exists.
+	files = $state<FileEntry[]>([]);
+	diffs = $state<Record<string, DiffLine[]>>({});
+	liveDiffLoading = $state(false);
+	liveDiffError = $state<string | null>(null);
+
+	async loadLiveDiff() {
+		this.liveDiffLoading = true;
+		this.liveDiffError = null;
+		try {
+			const { files, diffs } = await getLiveDiff();
+			this.files = files;
+			this.diffs = diffs;
+			if (files.length && !files.some((f) => filePath(f) === this.active)) {
+				this.active = filePath(files[0]);
+			}
+		} catch (e) {
+			this.liveDiffError = e instanceof Error ? e.message : String(e);
+		} finally {
+			this.liveDiffLoading = false;
+		}
+	}
 
 	notesFor(path: string): Note[] {
 		return this.notes.filter((n) => n.path === path);

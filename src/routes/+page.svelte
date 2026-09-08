@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { ReviewState } from '$lib/state.svelte';
 	import TitleBar from '$lib/components/review/TitleBar.svelte';
 	import ModeBar from '$lib/components/review/ModeBar.svelte';
@@ -10,6 +11,9 @@
 	import * as Resizable from '$lib/components/ui/resizable/index.js';
 
 	const state = new ReviewState();
+	onMount(() => {
+		state.loadLiveDiff();
+	});
 
 	function onKeydown(e: KeyboardEvent) {
 		if (e.key === '/' && (e.metaKey || e.ctrlKey || e.shiftKey)) {

@@ -3,7 +3,6 @@
 	import Radio from '@lucide/svelte/icons/radio';
 	import GitPullRequest from '@lucide/svelte/icons/git-pull-request';
 	import RotateCcwClock from '@lucide/svelte/icons/rotate-ccw-clock';
-	import { FILES } from '$lib/mock/data';
 	import type { ReviewState } from '$lib/state.svelte';
 	import type { ReviewMode } from '$lib/types';
 
@@ -15,8 +14,8 @@
 		{ id: 'history', label: 'History', Icon: RotateCcwClock }
 	];
 
-	const totalAdd = FILES.reduce((a, f) => a + f.added, 0);
-	const totalDel = FILES.reduce((a, f) => a + f.removed, 0);
+	const totalAdd = $derived(state.files.reduce((a, f) => a + f.added, 0));
+	const totalDel = $derived(state.files.reduce((a, f) => a + f.removed, 0));
 </script>
 
 <div
@@ -51,7 +50,7 @@
 		<span style="color:var(--color-add)">+{totalAdd}</span>
 		<span style="color:var(--color-del)">−{totalDel}</span>
 		<span style="color:var(--color-neutral-700)">·</span>
-		<span style="color:var(--color-neutral-500)">{FILES.length} files</span>
+		<span style="color:var(--color-neutral-500)">{state.files.length} files</span>
 	</div>
 
 	<div

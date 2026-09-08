@@ -9,7 +9,8 @@
 
 	let { state }: { state: ReviewState } = $props();
 
-	const rows = $derived(DIFFS[state.active] ?? []);
+	const diffs = $derived(state.mode === 'pr' ? DIFFS : state.diffs);
+	const rows = $derived(diffs[state.active] ?? []);
 	const notesByLine = $derived.by(() => {
 		const map = new Map<number, Note>();
 		for (const n of state.notesFor(state.active)) map.set(n.line, n);
@@ -18,6 +19,19 @@
 </script>
 
 <div class="min-h-0 flex-1 overflow-auto py-1.5" style="background:var(--color-bg)">
+	{#if state.mode === 'live' && rows.length === 0}
+		<div class="px-3.5 py-4 text-[12.5px]" style="color:var(--color-neutral-600)">
+			{#if state.liveDiffLoading}
+				Loading…
+			{:else if state.liveDiffError}
+				<span style="color:var(--color-del)">{state.liveDiffError}</span>
+			{:else if state.files.length === 0}
+				No local changes to show.
+			{:else}
+				Select a file to see its diff.
+			{/if}
+		</div>
+	{/if}
 	{#each rows as row, i (i)}
 		{#if row.kind === 'hunk'}
 			<div

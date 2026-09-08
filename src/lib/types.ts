@@ -15,6 +15,12 @@ export interface FileEntry {
 	removed: number;
 }
 
+// dir is "" for root-level files — don't insert a slash then, or the path
+// won't match the git-relative path the backend uses as its diffs map key.
+export function filePath(f: FileEntry): string {
+	return f.dir ? `${f.dir}/${f.name}` : f.name;
+}
+
 export interface CodeToken {
 	text: string;
 	color: string;
@@ -22,7 +28,7 @@ export interface CodeToken {
 
 export type DiffLine =
 	| { kind: 'hunk'; range: string; context: string }
-	| { kind: 'add' | 'del' | 'ctx'; oldLine: number | ''; newLine: number | ''; text: string };
+	| { kind: 'add' | 'del' | 'ctx'; oldLine: number | null; newLine: number | null; text: string };
 
 export interface Commit {
 	sha: string;

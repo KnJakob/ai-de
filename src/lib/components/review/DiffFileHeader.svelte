@@ -1,15 +1,23 @@
 <script lang="ts">
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import TextWrap from '@lucide/svelte/icons/text-wrap';
-	import { DIFFS, FILES, filePath } from '$lib/mock/data';
+	import { DIFFS, FILES } from '$lib/mock/data';
 	import type { ReviewState } from '$lib/state.svelte';
+	import { filePath } from '$lib/types';
 
 	let { state }: { state: ReviewState } = $props();
 
-	const activeFile = $derived(FILES.find((f) => filePath(f) === state.active) ?? FILES[0]);
-	const hunkCount = $derived((DIFFS[state.active] ?? []).filter((r) => r.kind === 'hunk').length);
+	// Live mode reads the real git2-backed diff; the PR's "Files changed"
+	// tab keeps its own fictional file list rather than colliding with
+	// whatever the repo's actual working tree happens to look like.
+	const files = $derived(state.mode === 'pr' ? FILES : state.files);
+	const diffs = $derived(state.mode === 'pr' ? DIFFS : state.diffs);
+	const activeFile = $derived(files.find((f) => filePath(f) === state.active));
+	const hunkCount = $derived((diffs[state.active] ?? []).filter((r) => r.kind === 'hunk').length);
 	const hunkLabel = $derived(
-		`${hunkCount} ${hunkCount === 1 ? 'hunk' : 'hunks'} · +${activeFile.added} −${activeFile.removed}`
+		activeFile
+			? `${hunkCount} ${hunkCount === 1 ? 'hunk' : 'hunks'} · +${activeFile.added} −${activeFile.removed}`
+			: ''
 	);
 </script>
 
@@ -19,7 +27,11 @@
 >
 	<FileCode size={13} style="color:var(--color-neutral-500)" />
 	<span class="overflow-hidden text-ellipsis whitespace-nowrap text-[12px]" style="font-family:var(--font-mono);color:var(--color-neutral-400)">
-		{activeFile.dir}/<span class="font-medium" style="color:var(--color-text)">{activeFile.name}</span>
+		{#if activeFile}
+			{activeFile.dir}{activeFile.dir ? '/' : ''}<span class="font-medium" style="color:var(--color-text)">{activeFile.name}</span>
+		{:else}
+			<span style="color:var(--color-neutral-600)">No file selected</span>
+		{/if}
 	</span>
 	<div class="flex-1"></div>
 	<span class="flex-none whitespace-nowrap text-[11px]" style="color:var(--color-neutral-600)">{hunkLabel}</span>
