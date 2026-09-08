@@ -1,78 +1,88 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-@custom-variant dark (&:is(.dark *));
-
+/* Nocturne design system (imported from the Claude Design "AI-IDE code
+   viewer design" project) plus AI-DE's own diff/review semantic colors,
+   which the system doesn't define — it's a mono accent scheme. */
 :root {
-	--radius: 0.625rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.145 0 0);
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.145 0 0);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.145 0 0);
-	--primary: oklch(0.205 0 0);
-	--primary-foreground: oklch(0.985 0 0);
-	--secondary: oklch(0.97 0 0);
-	--secondary-foreground: oklch(0.205 0 0);
-	--muted: oklch(0.97 0 0);
-	--muted-foreground: oklch(0.556 0 0);
-	--accent: oklch(0.97 0 0);
-	--accent-foreground: oklch(0.205 0 0);
-	--destructive: oklch(0.577 0.245 27.325);
-	--border: oklch(0.922 0 0);
-	--input: oklch(0.922 0 0);
-	--ring: oklch(0.708 0 0);
-	--chart-1: oklch(0.87 0 0);
-	--chart-2: oklch(0.556 0 0);
-	--chart-3: oklch(0.439 0 0);
-	--chart-4: oklch(0.371 0 0);
-	--chart-5: oklch(0.269 0 0);
-	--sidebar: oklch(0.985 0 0);
-	--sidebar-foreground: oklch(0.145 0 0);
-	--sidebar-primary: oklch(0.205 0 0);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.97 0 0);
-	--sidebar-accent-foreground: oklch(0.205 0 0);
-	--sidebar-border: oklch(0.922 0 0);
-	--sidebar-ring: oklch(0.708 0 0);
-}
+	--radius: 0.5rem;
 
-.dark {
-	--background: oklch(0.145 0 0);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.205 0 0);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.205 0 0);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: oklch(0.922 0 0);
-	--primary-foreground: oklch(0.205 0 0);
-	--secondary: oklch(0.269 0 0);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.269 0 0);
-	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
-	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 10%);
-	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.556 0 0);
-	--chart-1: oklch(0.87 0 0);
-	--chart-2: oklch(0.556 0 0);
-	--chart-3: oklch(0.439 0 0);
-	--chart-4: oklch(0.371 0 0);
-	--chart-5: oklch(0.269 0 0);
-	--sidebar: oklch(0.205 0 0);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-primary: oklch(0.488 0.243 264.376);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.269 0 0);
-	--sidebar-accent-foreground: oklch(0.985 0 0);
-	--sidebar-border: oklch(1 0 0 / 10%);
-	--sidebar-ring: oklch(0.556 0 0);
+	--color-bg: #161826;
+	--color-surface: #232532;
+	--color-surface-2: #1e2030; /* raised cards: segmented control, dialogs, PR body */
+	--color-surface-3: #1f2131; /* highlighted cards: note composer, pinned notes */
+	--color-panel: #1a1c2a; /* file tree + side panel background */
+	--color-header: #1b1d2b; /* title bar + status bar */
+	--color-header-2: #191b29; /* PR header band */
+	--color-hover: #1c1e2c;
+	--color-text: #e9e9ed;
+	--color-brand: #9184d9; /* Nocturne's accent — renamed to avoid colliding with Tailwind's own --color-accent token below */
+	--color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+	--color-neutral-100: #f3f5fe;
+	--color-neutral-200: #e4e7f5;
+	--color-neutral-300: #cfd3e5;
+	--color-neutral-400: #b2b6ca;
+	--color-neutral-500: #9397ab;
+	--color-neutral-600: #75798c;
+	--color-neutral-700: #595d6c;
+	--color-neutral-800: #3f424d;
+	--color-neutral-900: #292b31;
+
+	--color-accent-100: #f5f4ff;
+	--color-accent-200: #e7e5fe;
+	--color-accent-300: #d2cefd;
+	--color-accent-400: #b5abfc;
+	--color-accent-500: #968ae0;
+	--color-accent-600: #796cbf;
+	--color-accent-700: #5d5294;
+	--color-accent-800: #423a6a;
+	--color-accent-900: #2b2741;
+
+	--font-heading: 'Inter', system-ui, sans-serif;
+	--font-body: 'Inter', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+	--shadow-sm: 0 0 0 1px #3f424d;
+	--shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0, 0, 0, 0.55);
+	--shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0, 0, 0, 0.65);
+
+	/* Diff + review semantics — not part of Nocturne's mono palette */
+	--color-add: #7fb894;
+	--color-add-edge: #4d7a63;
+	--color-add-bg: rgba(112, 168, 134, 0.09);
+	--color-add-bg-hover: rgba(112, 168, 134, 0.15);
+	--color-del: #c9878c;
+	--color-del-edge: #8a5a5f;
+	--color-del-bg: rgba(190, 112, 118, 0.09);
+	--color-del-bg-hover: rgba(190, 112, 118, 0.15);
+	--color-approved: #8fc4a4;
+	--color-changes-requested: #d9a3a7;
+
+	--background: var(--color-bg);
+	--foreground: var(--color-text);
+	--card: var(--color-surface-2);
+	--card-foreground: var(--color-text);
+	--popover: var(--color-surface-2);
+	--popover-foreground: var(--color-text);
+	--primary: var(--color-brand);
+	--primary-foreground: var(--color-text);
+	--secondary: var(--color-surface);
+	--secondary-foreground: var(--color-text);
+	--muted: var(--color-surface);
+	--muted-foreground: var(--color-neutral-500);
+	--accent: var(--color-surface);
+	--accent-foreground: var(--color-text);
+	--destructive: var(--color-del);
+	--border: var(--color-divider);
+	--input: var(--color-divider);
+	--ring: var(--color-brand);
 }
 
 @theme inline {
+	--font-sans: var(--font-body);
+	--font-mono: var(--font-mono);
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
@@ -95,26 +105,52 @@
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
-	--color-chart-1: var(--chart-1);
-	--color-chart-2: var(--chart-2);
-	--color-chart-3: var(--chart-3);
-	--color-chart-4: var(--chart-4);
-	--color-chart-5: var(--chart-5);
-	--color-sidebar: var(--sidebar);
-	--color-sidebar-foreground: var(--sidebar-foreground);
-	--color-sidebar-primary: var(--sidebar-primary);
-	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-	--color-sidebar-accent: var(--sidebar-accent);
-	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-	--color-sidebar-border: var(--sidebar-border);
-	--color-sidebar-ring: var(--sidebar-ring);
 }
 
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
 	}
+	html,
+	body {
+		height: 100%;
+	}
 	body {
 		@apply bg-background text-foreground;
+		font-family: var(--font-body);
+		margin: 0;
+	}
+	::selection {
+		background: color-mix(in srgb, var(--color-brand) 30%, transparent);
+	}
+	:focus {
+		outline: none;
+	}
+	:focus-visible {
+		outline: 2px solid var(--color-brand);
+		outline-offset: 2px;
+	}
+	::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+	::-webkit-scrollbar-thumb {
+		background: var(--color-neutral-800);
+		border-radius: 6px;
+		border: 3px solid var(--color-bg);
+	}
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	@keyframes aide-pulse {
+		0%,
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.35;
+			transform: scale(0.8);
+		}
 	}
 }
