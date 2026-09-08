@@ -17,13 +17,7 @@
 	class="flex h-[38px] items-center gap-4 border-b px-3"
 	style="background:var(--color-header);border-color:var(--color-divider)"
 >
-	<div class="flex flex-none items-center gap-2">
-		<span class="h-[11px] w-[11px] rounded-full" style="background:#4a4d5c"></span>
-		<span class="h-[11px] w-[11px] rounded-full" style="background:#4a4d5c"></span>
-		<span class="h-[11px] w-[11px] rounded-full" style="background:#4a4d5c"></span>
-	</div>
-
-	<div class="ml-2 flex h-full items-stretch gap-0.5">
+	<div class="flex h-full items-stretch gap-0.5">
 		{#each projects as p (p.name)}
 			<button
 				class="flex items-center gap-[7px] px-[13px] font-medium text-[12px] transition-colors"
