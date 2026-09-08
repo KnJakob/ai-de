@@ -71,7 +71,7 @@
 						<span
 							class="flex h-5 w-5 items-center justify-center rounded-full font-medium text-[9px]"
 							style:background={e.author?.startsWith('agent') ? 'var(--color-accent-800)' : 'var(--color-neutral-800)'}
-							style="color:var(--color-text)">{e.author?.startsWith('agent') ? 'AC' : e.author?.split(' ').map((p) => p[0]).join('')}</span
+							style="color:var(--color-text)">{e.initials}</span
 						>
 						<span class="font-medium text-[12px]" style="color:var(--color-text)">{e.author}</span>
 						<span class="text-[11px]" style="color:var(--color-neutral-600)">{e.verb}</span>
