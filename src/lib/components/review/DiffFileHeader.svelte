@@ -1,19 +1,13 @@
 <script lang="ts">
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import TextWrap from '@lucide/svelte/icons/text-wrap';
-	import { DIFFS, FILES } from '$lib/mock/data';
 	import type { ReviewState } from '$lib/state.svelte';
 	import { filePath } from '$lib/types';
 
 	let { state }: { state: ReviewState } = $props();
 
-	// Live mode reads the real git2-backed diff; the PR's "Files changed"
-	// tab keeps its own fictional file list rather than colliding with
-	// whatever the repo's actual working tree happens to look like.
-	const files = $derived(state.mode === 'pr' ? FILES : state.files);
-	const diffs = $derived(state.mode === 'pr' ? DIFFS : state.diffs);
-	const activeFile = $derived(files.find((f) => filePath(f) === state.active));
-	const hunkCount = $derived((diffs[state.active] ?? []).filter((r) => r.kind === 'hunk').length);
+	const activeFile = $derived(state.activeFiles.find((f) => filePath(f) === state.active));
+	const hunkCount = $derived((state.activeDiffs[state.active] ?? []).filter((r) => r.kind === 'hunk').length);
 	const hunkLabel = $derived(
 		activeFile
 			? `${hunkCount} ${hunkCount === 1 ? 'hunk' : 'hunks'} · +${activeFile.added} −${activeFile.removed}`

@@ -2,15 +2,13 @@
 	import Pin from '@lucide/svelte/icons/pin';
 	import Plus from '@lucide/svelte/icons/plus';
 	import X from '@lucide/svelte/icons/x';
-	import { DIFFS } from '$lib/mock/data';
 	import { tokenize } from '$lib/mock/tokenize';
 	import type { ReviewState } from '$lib/state.svelte';
 	import type { Note } from '$lib/types';
 
 	let { state }: { state: ReviewState } = $props();
 
-	const diffs = $derived(state.mode === 'pr' ? DIFFS : state.diffs);
-	const rows = $derived(diffs[state.active] ?? []);
+	const rows = $derived(state.activeDiffs[state.active] ?? []);
 	const notesByLine = $derived.by(() => {
 		const map = new Map<number, Note>();
 		for (const n of state.notesFor(state.active)) map.set(n.line, n);

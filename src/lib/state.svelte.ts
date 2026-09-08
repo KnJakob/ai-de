@@ -1,5 +1,5 @@
 import { getLiveDiff } from '$lib/backend';
-import { FILES, INITIAL_NOTES } from '$lib/mock/data';
+import { DIFFS, FILES, INITIAL_NOTES } from '$lib/mock/data';
 import type { DiffLine, FileEntry, Note, PrTab, ReviewDecision, ReviewMode, SidePanelTab } from '$lib/types';
 import { filePath } from '$lib/types';
 
@@ -45,6 +45,18 @@ export class ReviewState {
 		} finally {
 			this.liveDiffLoading = false;
 		}
+	}
+
+	// Live mode (and the always-visible file tree) show the real git2 diff;
+	// PR mode keeps its own fictional file list rather than colliding with
+	// whatever the repo's actual working tree looks like. DiffFileHeader and
+	// DiffView both need this same selection, so it lives here once.
+	get activeFiles(): FileEntry[] {
+		return this.mode === 'pr' ? FILES : this.files;
+	}
+
+	get activeDiffs(): Record<string, DiffLine[]> {
+		return this.mode === 'pr' ? DIFFS : this.diffs;
 	}
 
 	notesFor(path: string): Note[] {
