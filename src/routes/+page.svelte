@@ -13,6 +13,10 @@
 	const state = new ReviewState();
 	onMount(() => {
 		state.loadLiveDiff();
+		// No filesystem watcher yet (see docs/stack.md's notify-crate phase) —
+		// poll instead so Live mode doesn't go stale while an agent writes.
+		const interval = setInterval(() => state.loadLiveDiff(), 10_000);
+		return () => clearInterval(interval);
 	});
 
 	function onKeydown(e: KeyboardEvent) {
