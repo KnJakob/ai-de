@@ -52,7 +52,13 @@ pub fn compute_live_diff(repo: &Repository) -> Result<LiveDiff, git2::Error> {
     let head_tree = repo.head()?.peel_to_tree()?;
 
     let mut opts = DiffOptions::new();
-    opts.include_untracked(true).recurse_untracked_dirs(true);
+    opts.include_untracked(true)
+        .recurse_untracked_dirs(true)
+        // Without this, git2 lists new files but emits no hunks/lines for
+        // them — show_untracked_content makes it generate the file's full
+        // content as a single all-added hunk, same as plain `git diff`'s
+        // own untracked-file display.
+        .show_untracked_content(true);
     let diff = repo.diff_tree_to_workdir(Some(&head_tree), Some(&mut opts))?;
 
     // git2's foreach takes up to four separate closures that all need to
@@ -254,6 +260,17 @@ mod tests {
 
         let added = live.files.iter().find(|f| f.name == "new.rs").unwrap();
         assert_eq!(added.status, "A");
+        assert!(
+            added.added > 0,
+            "untracked file should show its content as added lines, not +0/-0"
+        );
+        let new_rows = live.diffs.get("new.rs").expect("new.rs should have diff rows");
+        assert!(
+            new_rows
+                .iter()
+                .any(|r| matches!(r, DiffRow::Add { text, .. } if text == "// brand new")),
+            "untracked file's actual content should appear as an added line"
+        );
 
         fs::remove_dir_all(&dir).ok();
     }
