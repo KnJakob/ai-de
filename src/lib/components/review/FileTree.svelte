@@ -76,6 +76,8 @@
 
 	<div class="flex items-center gap-[7px] border-t px-3 py-[9px]" style="border-color:var(--color-divider)">
 		<Radio size={13} style="color:var(--color-brand)" />
-		<span class="text-[11px]" style="color:var(--color-neutral-500)">Watching working directory</span>
+		<span class="truncate text-[11px]" style="color:var(--color-neutral-500)" title={state.workspacePath ?? undefined}>
+			Watching {state.workspacePath ?? 'current repository'}
+		</span>
 	</div>
 </div>

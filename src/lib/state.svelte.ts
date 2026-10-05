@@ -1,4 +1,4 @@
-import { getLiveDiff } from '$lib/backend';
+import { getLiveDiff, pickWorkspaceFolder } from '$lib/backend';
 import { DIFFS, FILES, INITIAL_NOTES } from '$lib/mock/data';
 import type { DiffLine, FileEntry, Note, PrTab, ReviewDecision, ReviewMode, SidePanelTab } from '$lib/types';
 import { filePath } from '$lib/types';
@@ -25,6 +25,9 @@ export class ReviewState {
 	// Real workdir-vs-HEAD diff from the Rust backend (git2) — Live mode and
 	// the always-visible file tree read from these, not from mock data.
 	// PR/History/Blame stay mock until GitHub/log integration exists.
+	// workspacePath is null until the user picks a folder, meaning "whatever
+	// repo the app's cwd sits in" — the same default get_live_diff always had.
+	workspacePath = $state<string | null>(null);
 	files = $state<FileEntry[]>([]);
 	diffs = $state<Record<string, DiffLine[]>>({});
 	liveDiffLoading = $state(false);
@@ -34,7 +37,7 @@ export class ReviewState {
 		this.liveDiffLoading = true;
 		this.liveDiffError = null;
 		try {
-			const { files, diffs } = await getLiveDiff();
+			const { files, diffs } = await getLiveDiff(this.workspacePath ?? undefined);
 			this.files = files;
 			this.diffs = diffs;
 			if (files.length && !files.some((f) => filePath(f) === this.active)) {
@@ -47,10 +50,24 @@ export class ReviewState {
 		}
 	}
 
+	async pickWorkspace() {
+		const picked = await pickWorkspaceFolder();
+		if (!picked) return;
+		this.workspacePath = picked;
+		await this.loadLiveDiff();
+	}
+
 	// Live mode (and the always-visible file tree) show the real git2 diff;
 	// PR mode keeps its own fictional file list rather than colliding with
 	// whatever the repo's actual working tree looks like. DiffFileHeader and
 	// DiffView both need this same selection, so it lives here once.
+	// Falls back to "ai-de" before a folder is picked, matching the app's
+	// own repo — the one get_live_diff defaults to discovering from cwd.
+	get workspaceName(): string {
+		if (!this.workspacePath) return 'ai-de';
+		return this.workspacePath.replace(/\/+$/, '').split('/').pop() || this.workspacePath;
+	}
+
 	get activeFiles(): FileEntry[] {
 		return this.mode === 'pr' ? FILES : this.files;
 	}

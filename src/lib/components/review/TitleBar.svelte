@@ -6,11 +6,6 @@
 	import type { ReviewState } from '$lib/state.svelte';
 
 	let { state }: { state: ReviewState } = $props();
-
-	const projects = [
-		{ name: 'ai-de', active: true },
-		{ name: 'notes-sync', active: false }
-	];
 </script>
 
 <div
@@ -18,25 +13,22 @@
 	style="background:var(--color-header);border-color:var(--color-divider)"
 >
 	<div class="flex h-full items-stretch gap-0.5">
-		{#each projects as p (p.name)}
-			<button
-				class="flex items-center gap-[7px] px-[13px] font-medium text-[12px] transition-colors"
-				style:background={p.active ? 'var(--color-surface)' : 'transparent'}
-				style:color={p.active ? 'var(--color-text)' : 'var(--color-neutral-500)'}
-				style:box-shadow={p.active ? 'inset 0 -2px 0 0 var(--color-brand)' : 'none'}
-			>
-				<span
-					class="h-1.5 w-1.5 rounded-full"
-					style:background={p.active ? 'var(--color-brand)' : '#4a4d5c'}
-					style:animation={p.active ? 'aide-pulse 1.7s ease-in-out infinite' : 'none'}
-				></span>
-				{p.name}
-			</button>
-		{/each}
 		<button
+			class="flex items-center gap-[7px] px-[13px] font-medium text-[12px] transition-colors"
+			style="background:var(--color-surface);color:var(--color-text);box-shadow:inset 0 -2px 0 0 var(--color-brand)"
+			title={state.workspacePath ?? 'Current repository'}
+		>
+			<span
+				class="h-1.5 w-1.5 rounded-full"
+				style="background:var(--color-brand);animation:aide-pulse 1.7s ease-in-out infinite"
+			></span>
+			{state.workspaceName}
+		</button>
+		<button
+			onclick={() => state.pickWorkspace()}
 			class="flex items-center px-[9px] text-[14px]"
 			style="color:var(--color-neutral-600)"
-			title="Open another project"
+			title="Open a different folder"
 		>
 			<Plus size={14} />
 		</button>
