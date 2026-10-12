@@ -16,11 +16,8 @@ pub enum RepoRefError {
 pub fn resolve(path: Option<&str>) -> Result<RepoRef, RepoRefError> {
     let repo = git2::Repository::discover(path.unwrap_or(".")).map_err(|_| RepoRefError::NotAGitRepo)?;
 
-    let head = repo.head().map_err(|_| RepoRefError::DetachedHead)?;
-    let branch = head
-        .shorthand()
-        .map_err(|_| RepoRefError::DetachedHead)?
-        .to_string();
+    let branch =
+        crate::git::branch::current_branch_name(&repo).map_err(|_| RepoRefError::DetachedHead)?;
 
     let remote = repo
         .find_remote("origin")

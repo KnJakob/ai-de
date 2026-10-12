@@ -65,10 +65,6 @@ overview" above.)
 
 ## Hardcoded display values (not derived from real state)
 
-- **Branch name** (`ModeBar.svelte`) — `"agent/debounce-watcher"` / `"main"`
-  are literal strings, not the real repo's current branch. (The real branch
-  is already fetched for PR matching in `repo_ref.rs` — just not surfaced
-  here yet.)
 - **"Agent writing · 2s ago" badge** (`ModeBar.svelte`) — decorative,
   always on, not tied to any real agent-activity signal.
 

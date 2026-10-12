@@ -1,5 +1,6 @@
 import { openUrl } from '@tauri-apps/plugin-opener';
 import {
+	getBranchInfo,
 	getLiveDiff,
 	getPrOverview,
 	pickWorkspaceFolder,
@@ -67,6 +68,24 @@ export class ReviewState {
 	liveDiffLoading = $state(false);
 	liveDiffError = $state<string | null>(null);
 
+	// The real current branch (and the repo's default branch, if one is
+	// configured — e.g. via "origin/HEAD"). Doesn't change mid-session the
+	// way the diff does, so it's only (re)loaded on mount and on workspace
+	// switch, not on the 10s live-diff poll.
+	branch = $state<string | null>(null);
+	defaultBranch = $state<string | null>(null);
+
+	async loadBranchInfo() {
+		try {
+			const info = await getBranchInfo(this.workspacePath ?? undefined);
+			this.branch = info.branch;
+			this.defaultBranch = info.defaultBranch;
+		} catch {
+			this.branch = null;
+			this.defaultBranch = null;
+		}
+	}
+
 	// `restored` comes from sessionStorage (untrusted — could be stale from
 	// an older build) — validate each field against its known-good values
 	// instead of trusting it wholesale.
@@ -105,7 +124,7 @@ export class ReviewState {
 		const picked = await pickWorkspaceFolder();
 		if (!picked) return;
 		this.workspacePath = picked;
-		await this.loadLiveDiff();
+		await Promise.all([this.loadLiveDiff(), this.loadBranchInfo()]);
 		if (this.mode === 'pr') await this.loadPrOverview();
 	}
 

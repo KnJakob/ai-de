@@ -11,6 +11,15 @@ export function getLiveDiff(path?: string): Promise<LiveDiff> {
 	return invoke('get_live_diff', { path: path ?? null });
 }
 
+export interface BranchInfo {
+	branch: string;
+	defaultBranch: string | null;
+}
+
+export function getBranchInfo(path?: string): Promise<BranchInfo> {
+	return invoke('get_branch_info', { path: path ?? null });
+}
+
 // Native OS folder picker. Returns null if the user cancels.
 export async function pickWorkspaceFolder(): Promise<string | null> {
 	const result = await open({ directory: true, multiple: false });
