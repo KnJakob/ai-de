@@ -5,9 +5,33 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI-DE</title>
+    <style>
+      /* This app is CSR-only (see +layout.ts, ssr = false) — there's a real
+         gap between the blank HTML and Svelte mounting, on every reload, not
+         just first load. Match the app's own dark background here (can't
+         use the --color-bg token, that stylesheet hasn't loaded yet).
+         #161826/#9184d9 are literal copies of layout.css's
+         --color-bg/--color-brand — keep them in sync if that theme changes,
+         nothing else enforces it.
+         +layout.svelte's onMount removes #pre-mount-loader explicitly —
+         Svelte's mount() appends into the target div, it does not clear
+         it, so this element would otherwise sit on top forever. */
+      html, body { margin: 0; background: #161826; }
+      #pre-mount-loader {
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        background: #161826; pointer-events: none;
+      }
+      #pre-mount-loader svg { animation: pre-mount-spin 0.8s linear infinite; }
+      @keyframes pre-mount-spin { to { transform: rotate(360deg); } }
+    </style>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
+    <div id="pre-mount-loader" aria-hidden="true">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9184d9" stroke-width="2.5" stroke-linecap="round">
+        <path d="M12 2a10 10 0 0 1 10 10" />
+      </svg>
+    </div>
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

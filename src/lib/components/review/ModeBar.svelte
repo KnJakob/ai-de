@@ -24,9 +24,11 @@
 >
 	<div class="flex min-w-0 items-center gap-1.5">
 		<GitBranch size={14} style="color:var(--color-brand)" />
-		<span class="font-medium text-[12px]" style="color:var(--color-text)">agent/debounce-watcher</span>
-		<span class="px-0.5" style="color:var(--color-neutral-700)">←</span>
-		<span class="text-[12px]" style="color:var(--color-neutral-500)">main</span>
+		<span class="min-w-0 truncate font-medium text-[12px]" style="color:var(--color-text)">{state.branch ?? '—'}</span>
+		{#if state.defaultBranch && state.defaultBranch !== state.branch}
+			<span class="px-0.5" style="color:var(--color-neutral-700)">←</span>
+			<span class="text-[12px]" style="color:var(--color-neutral-500)">{state.defaultBranch}</span>
+		{/if}
 	</div>
 
 	<div class="h-[18px] w-px" style="background:var(--color-divider)"></div>

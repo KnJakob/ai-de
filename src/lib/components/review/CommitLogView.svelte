@@ -1,14 +1,9 @@
 <script lang="ts">
 	import { COMMITS } from '$lib/mock/data';
-	import type { ReviewState } from '$lib/state.svelte';
-
-	let { state }: { state: ReviewState } = $props();
-
-	const commits = $derived(state.mode === 'pr' ? COMMITS.slice(0, 3) : COMMITS);
 </script>
 
 <div class="min-h-0 flex-1 overflow-auto py-2.5 pb-8">
-	{#each commits as c, i (c.sha)}
+	{#each COMMITS as c, i (c.sha)}
 		<div
 			class="grid grid-cols-[20px_78px_minmax(0,1fr)_132px_92px] items-center gap-3 border-b px-4 py-2.5"
 			style="border-color:rgba(233,233,237,0.07)"

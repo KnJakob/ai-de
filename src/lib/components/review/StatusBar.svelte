@@ -11,7 +11,7 @@
 	class="flex h-[27px] items-center gap-3.5 border-t px-3 text-[11px]"
 	style="background:var(--color-header);border-color:var(--color-divider);color:var(--color-neutral-500)"
 >
-	<span class="flex items-center gap-1.5"><GitBranch size={12} />agent/debounce-watcher</span>
+	<span class="flex items-center gap-1.5"><GitBranch size={12} />{state.branch ?? '—'}</span>
 	<span class="flex items-center gap-1.5" style="color:var(--color-accent-300)"><Radio size={12} />claude-code · run 14</span>
 	<span class="flex items-center gap-1.5"><MessageSquareText size={12} />{state.notes.length} local notes</span>
 	<div class="flex-1"></div>

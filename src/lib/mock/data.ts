@@ -1,13 +1,4 @@
-import type {
-	BlameLine,
-	Commit,
-	DiffLine,
-	FileEntry,
-	Note,
-	PullRequest,
-	ShortcutGroup,
-	TimelineEvent
-} from '$lib/types';
+import type { BlameLine, Commit, DiffLine, FileEntry, Note, ShortcutGroup } from '$lib/types';
 
 export const FILES: FileEntry[] = [
 	{ dir: 'src-tauri/src/git', name: 'watcher.rs', status: 'M', added: 24, removed: 6 },
@@ -137,84 +128,6 @@ export const BLAME: BlameLine[] = [
 	{ line: 66, sha: 'e88c204', subject: 'feat(watch): one notify handle per project tab', author: 'K. Jakob', when: '6 days ago' },
 	{ line: 75, sha: '2ab7f19', subject: 'feat(tabs): close a project tab cleanly', author: 'K. Jakob', when: '5 days ago' },
 	{ line: 76, sha: '4f1c9ab', subject: 'feat(git-watcher): debounce agent write bursts', author: 'agent/claude-code', when: '4 min ago' }
-];
-
-const PR_BODY =
-	'The watcher emitted one fs:changed event per write, so a single agent edit pass fired 40+ Git diffs and the pane flickered. Writes are now collapsed per path inside a 120 ms window, and unwatch stops the handle instead of only dropping it from the map.';
-
-export const PR: PullRequest = {
-	number: 128,
-	title: 'feat(git-watcher): debounce agent write bursts',
-	author: 'agent/claude-code',
-	opened: 'opened 12 minutes ago',
-	body: PR_BODY,
-	bullets: [
-		'Watcher collapses repeated writes to the same path inside a 120 ms window before emitting fs:changed.',
-		'unwatch() now stops the notify handle instead of only dropping it from the registry map.',
-		'Diff flattening moved out of Svelte — DiffPane renders the rows Rust hands it.'
-	],
-	checks: [
-		{ name: 'cargo test — src-tauri', detail: '84 tests, 0 failed', state: 'passed' },
-		{ name: 'cargo clippy', detail: 'no warnings', state: 'passed' },
-		{ name: 'svelte-check', detail: 'queued behind clippy', state: 'running' }
-	],
-	comments: [
-		{ author: 'K. Jakob', initials: 'KJ', file: 'watcher.rs', line: 47, text: 'Pull the 120 ms out into a setting before this lands — different agents write at very different rates.', time: '6 min ago' },
-		{ author: 'agent/claude-code', initials: 'AC', text: 'Noted. Threading it through WatcherConfig in the next pass; the constant stays as the default.', time: '4 min ago' },
-		{ author: 'M. Weber', initials: 'MW', file: 'watcher.rs', line: 76, text: 'Good catch on the leaked handle. Worth a unit test for tab close.', time: '2 min ago' }
-	]
-};
-
-export const DIFF_SNIPPETS: Record<number, { line: number; sign: '+' | ''; text: string }[]> = {
-	47: [
-		{ line: 45, sign: '+', text: '        let (tx, rx) = channel();' },
-		{ line: 46, sign: '+', text: '        let mut seen: HashMap<PathBuf, Instant> = HashMap::new();' },
-		{ line: 47, sign: '+', text: '        let debounce = Duration::from_millis(120);' }
-	],
-	76: [
-		{ line: 75, sign: '', text: '    pub fn unwatch(&mut self, tab: TabId) {' },
-		{ line: 76, sign: '+', text: '        if let Some(handle) = self.handles.remove(&tab) {' },
-		{ line: 77, sign: '+', text: '            handle.stop();' }
-	]
-};
-
-export const TIMELINE: TimelineEvent[] = [
-	{ kind: 'body', author: 'agent/claude-code', initials: 'AC', time: '12 min ago', text: PR_BODY },
-	{
-		kind: 'comment',
-		author: 'K. Jakob',
-		initials: 'KJ',
-		time: '6 min ago',
-		verb: 'commented on watcher.rs',
-		file: 'src-tauri/src/git/watcher.rs',
-		line: 47,
-		text: 'Pull the 120 ms out into a setting before this lands — different agents write at very different rates, and 120 ms is far too eager for a slow one.'
-	},
-	{
-		kind: 'comment',
-		author: 'agent/claude-code',
-		initials: 'AC',
-		time: '4 min ago',
-		verb: 'replied',
-		text: 'Noted. Threading it through WatcherConfig in the next pass; the constant stays as the default.'
-	},
-	{
-		kind: 'event',
-		icon: 'commit',
-		time: '4 min ago',
-		text: 'agent/claude-code pushed 2 commits — 4f1c9ab, b02d117'
-	},
-	{
-		kind: 'comment',
-		author: 'M. Weber',
-		initials: 'MW',
-		time: '2 min ago',
-		verb: 'commented on watcher.rs',
-		file: 'src-tauri/src/git/watcher.rs',
-		line: 76,
-		text: 'Good catch on the leaked handle. Worth a unit test for tab close before this merges.'
-	},
-	{ kind: 'event', icon: 'check', time: '1 min ago', text: 'cargo test and clippy passed on 4f1c9ab' }
 ];
 
 export const SHORTCUTS: ShortcutGroup[] = [
