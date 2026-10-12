@@ -112,7 +112,7 @@ pub enum PrDetailsResult {
 enum Gate {
     NotAuthenticated,
     NoRemote,
-    Ready { octocrab: Octocrab, owner: String, repo: String },
+    Ready { octocrab: Octocrab, owner: String, repo: String, branch: String },
 }
 
 // Shared by both the list and the details fetch: resolve the repo from the
@@ -142,21 +142,15 @@ async fn gate(app: &tauri::AppHandle, path: Option<String>) -> Result<Gate, Stri
         .build()
         .map_err(|e| e.to_string())?;
 
-    Ok(Gate::Ready { octocrab, owner: repo_ref.owner, repo: repo_ref.repo })
+    Ok(Gate::Ready { octocrab, owner: repo_ref.owner, repo: repo_ref.repo, branch: repo_ref.branch })
 }
 
 pub async fn list_prs(app: &tauri::AppHandle, path: Option<String>) -> Result<PrListResult, String> {
-    let (octocrab, owner, repo) = match gate(app, path.clone()).await? {
+    let (octocrab, owner, repo, current_branch) = match gate(app, path).await? {
         Gate::NotAuthenticated => return Ok(PrListResult::NotAuthenticated),
         Gate::NoRemote => return Ok(PrListResult::NoRemote),
-        Gate::Ready { octocrab, owner, repo } => (octocrab, owner, repo),
+        Gate::Ready { octocrab, owner, repo, branch } => (octocrab, owner, repo, branch),
     };
-
-    // The current branch is cheap to re-derive here (no API call) and lets
-    // the picker highlight "this one's for the branch you're on" — resolve()
-    // already succeeded once in gate(), so this can't fail in a way gate()
-    // itself wouldn't have already caught.
-    let current_branch = repo_ref::resolve(path.as_deref()).ok().map(|r| r.branch);
 
     let prs = octocrab
         .pulls(&owner, &repo)
@@ -173,7 +167,7 @@ pub async fn list_prs(app: &tauri::AppHandle, path: Option<String>) -> Result<Pr
             author: pr.user.as_deref().map(PrAuthor::from).unwrap_or_else(PrAuthor::unknown),
             head_ref: pr.head.ref_field.clone(),
             created_at: pr.created_at.map(|d| d.to_rfc3339()).unwrap_or_default(),
-            is_current_branch: current_branch.as_deref() == Some(pr.head.ref_field.as_str()),
+            is_current_branch: current_branch == pr.head.ref_field,
         })
         .collect();
 
@@ -188,7 +182,7 @@ pub async fn get_details(
     let (octocrab, owner, repo) = match gate(app, path).await? {
         Gate::NotAuthenticated => return Ok(PrDetailsResult::NotAuthenticated),
         Gate::NoRemote => return Ok(PrDetailsResult::NoRemote),
-        Gate::Ready { octocrab, owner, repo } => (octocrab, owner, repo),
+        Gate::Ready { octocrab, owner, repo, .. } => (octocrab, owner, repo),
     };
 
     let pr = match octocrab.pulls(&owner, &repo).get(number).await {

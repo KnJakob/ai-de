@@ -10,7 +10,7 @@
 
 	const modes: { id: ReviewMode; label: string; Icon: typeof GitBranch }[] = [
 		{ id: 'live', label: 'Live diff', Icon: Radio },
-		{ id: 'pr', label: 'PR #128', Icon: GitPullRequest },
+		{ id: 'pr', label: 'Pull requests', Icon: GitPullRequest },
 		{ id: 'history', label: 'History', Icon: RotateCcwClock }
 	];
 
