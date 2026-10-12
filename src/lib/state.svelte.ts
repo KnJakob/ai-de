@@ -20,6 +20,23 @@ import type {
 } from '$lib/types';
 import { filePath } from '$lib/types';
 
+// What "page" the user was looking at — persisted to sessionStorage (see
+// +page.svelte) so a reload lands back where it was instead of resetting to
+// Live mode on the first file. Deliberately excludes notes/composer/review:
+// those aren't backed by real persistence yet either (see TODO.md).
+export interface PersistedUiState {
+	workspacePath: string | null;
+	mode: ReviewMode;
+	active: string;
+	prTab: PrTab;
+	sidePanelTab: SidePanelTab;
+	wrap: boolean;
+}
+
+const REVIEW_MODES: ReviewMode[] = ['live', 'pr', 'history'];
+const PR_TABS: PrTab[] = ['conversation', 'files', 'commits', 'checks'];
+const SIDE_PANEL_TABS: SidePanelTab[] = ['notes', 'pr', 'blame'];
+
 // Single reactive store for the one open project tab. Mirrors the design's
 // Component.state — kept as one class because every panel in this layout
 // reacts to the same handful of selections (active file, mode, review
@@ -49,6 +66,23 @@ export class ReviewState {
 	diffs = $state<Record<string, DiffLine[]>>({});
 	liveDiffLoading = $state(false);
 	liveDiffError = $state<string | null>(null);
+
+	// `restored` comes from sessionStorage (untrusted — could be stale from
+	// an older build) — validate each field against its known-good values
+	// instead of trusting it wholesale.
+	constructor(restored?: Partial<PersistedUiState>) {
+		if (!restored) return;
+		if (typeof restored.workspacePath === 'string' || restored.workspacePath === null) {
+			this.workspacePath = restored.workspacePath;
+		}
+		if (typeof restored.active === 'string' && restored.active) this.active = restored.active;
+		if (restored.mode && REVIEW_MODES.includes(restored.mode)) this.mode = restored.mode;
+		if (restored.prTab && PR_TABS.includes(restored.prTab)) this.prTab = restored.prTab;
+		if (restored.sidePanelTab && SIDE_PANEL_TABS.includes(restored.sidePanelTab)) {
+			this.sidePanelTab = restored.sidePanelTab;
+		}
+		if (typeof restored.wrap === 'boolean') this.wrap = restored.wrap;
+	}
 
 	async loadLiveDiff() {
 		this.liveDiffLoading = true;

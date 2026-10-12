@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { ReviewState } from '$lib/state.svelte';
+	import { ReviewState, type PersistedUiState } from '$lib/state.svelte';
 	import TitleBar from '$lib/components/review/TitleBar.svelte';
 	import ModeBar from '$lib/components/review/ModeBar.svelte';
 	import FileTree from '$lib/components/review/FileTree.svelte';
@@ -10,9 +10,37 @@
 	import ShortcutsDialog from '$lib/components/review/ShortcutsDialog.svelte';
 	import * as Resizable from '$lib/components/ui/resizable/index.js';
 
-	const state = new ReviewState();
+	// Reloading the webview re-runs this whole script from scratch (it's a
+	// CSR-only app — no server to hold state for it). sessionStorage survives
+	// a reload but not a full app restart, which matches "stay on the same
+	// page" without carrying stale state into an unrelated future session.
+	const STORAGE_KEY = 'ai-de:ui-state';
+	function readPersisted(): Partial<PersistedUiState> | undefined {
+		try {
+			const raw = sessionStorage.getItem(STORAGE_KEY);
+			return raw ? JSON.parse(raw) : undefined;
+		} catch {
+			return undefined;
+		}
+	}
+
+	const state = new ReviewState(readPersisted());
+
+	$effect(() => {
+		const snapshot: PersistedUiState = {
+			workspacePath: state.workspacePath,
+			mode: state.mode,
+			active: state.active,
+			prTab: state.prTab,
+			sidePanelTab: state.sidePanelTab,
+			wrap: state.wrap
+		};
+		sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+	});
+
 	onMount(() => {
 		state.loadLiveDiff();
+		if (state.mode === 'pr') state.loadPrOverview();
 		// No filesystem watcher yet (see docs/stack.md's notify-crate phase) —
 		// poll instead so Live mode doesn't go stale while an agent writes.
 		const interval = setInterval(() => state.loadLiveDiff(), 10_000);
