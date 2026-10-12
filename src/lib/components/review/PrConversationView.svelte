@@ -6,8 +6,9 @@
 	import Pin from '@lucide/svelte/icons/pin';
 	import { tokenize } from '$lib/mock/tokenize';
 	import type { ReviewState } from '$lib/state.svelte';
-	import { formatRelativeTime, initialsFor } from '$lib/types';
+	import { formatRelativeTime } from '$lib/types';
 	import type { PrCommentRow, PrSummary } from '$lib/types';
+	import Avatar from './Avatar.svelte';
 
 	let { state, pr }: { state: ReviewState; pr: PrSummary } = $props();
 
@@ -63,7 +64,7 @@
 			{#if e.kind === 'body'}
 				<div class="mb-3.5 rounded-[10px]" style="background:var(--color-surface-2);box-shadow:0 0 0 1px rgba(233,233,237,0.10)">
 					<div class="flex items-center gap-2.5 border-b px-3.5 py-2.5" style="border-color:rgba(233,233,237,0.09)">
-						<img src={pr.author.avatarUrl} alt="" class="h-5 w-5 rounded-full" />
+						<Avatar author={pr.author} size={20} />
 						<span class="font-medium text-[12px]" style="color:var(--color-text)">{pr.author.login}</span>
 						<span class="text-[11px]" style="color:var(--color-neutral-600)">described this pull request</span>
 						<div class="flex-1"></div>
@@ -85,10 +86,7 @@
 					style:box-shadow={`0 0 0 1px ${c.file ? 'rgba(145,132,217,0.22)' : 'rgba(233,233,237,0.10)'}`}
 				>
 					<div class="flex items-center gap-2.5 border-b px-3.5 py-2.5" style="border-color:rgba(233,233,237,0.08)">
-						<span
-							class="flex h-5 w-5 items-center justify-center rounded-full font-medium text-[9px]"
-							style="background:var(--color-neutral-800);color:var(--color-text)">{initialsFor(c.author.login)}</span
-						>
+						<Avatar author={c.author} size={20} />
 						<span class="font-medium text-[12px]" style="color:var(--color-text)">{c.author.login}</span>
 						{#if c.file}
 							<span class="text-[11px]" style="color:var(--color-neutral-600)">commented on {c.file.split('/').pop()}</span>

@@ -10,6 +10,7 @@
 	import type { ReviewState } from '$lib/state.svelte';
 	import { formatRelativeTime } from '$lib/types';
 	import type { PrSummary, PrTab } from '$lib/types';
+	import Avatar from './Avatar.svelte';
 
 	let { state, pr }: { state: ReviewState; pr: PrSummary } = $props();
 
@@ -82,7 +83,7 @@
 	<div class="max-w-[820px] font-medium text-[22px] leading-[1.2] tracking-[-0.015em]" style="color:var(--color-text)">{pr.title}</div>
 
 	<div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-[12px]" style="color:var(--color-neutral-500)">
-		<img src={pr.author.avatarUrl} alt="" class="h-3.5 w-3.5 rounded-full" />
+		<Avatar author={pr.author} size={14} />
 		<span class="font-medium" style="color:var(--color-neutral-300)">{pr.author.login}</span>
 		<span>wants to merge into</span>
 		<span class="text-[11.5px]" style="font-family:var(--font-mono);color:var(--color-accent-400)">{pr.baseRef}</span>

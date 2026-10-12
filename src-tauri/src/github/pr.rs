@@ -25,6 +25,14 @@ impl From<&Author> for PrAuthor {
     }
 }
 
+impl PrAuthor {
+    // GitHub's API can omit the author on a comment/PR (e.g. a deleted
+    // account) — the frontend treats an empty avatar_url as "no image".
+    fn unknown() -> Self {
+        PrAuthor { login: "unknown".into(), avatar_url: String::new() }
+    }
+}
+
 #[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PrCheckRun {
@@ -122,7 +130,7 @@ pub async fn get_overview(app: &tauri::AppHandle, path: Option<String>) -> Resul
         .user
         .as_deref()
         .map(PrAuthor::from)
-        .unwrap_or(PrAuthor { login: "unknown".into(), avatar_url: String::new() });
+        .unwrap_or_else(PrAuthor::unknown);
 
     let comments = octocrab
         .issues(&owner, &repo)
@@ -155,7 +163,7 @@ pub async fn get_overview(app: &tauri::AppHandle, path: Option<String>) -> Resul
                 .user
                 .as_ref()
                 .map(PrAuthor::from)
-                .unwrap_or(PrAuthor { login: "unknown".into(), avatar_url: String::new() }),
+                .unwrap_or_else(PrAuthor::unknown),
             body: c.body.clone(),
             created_at: c.created_at.to_rfc3339(),
             file: Some(c.path.clone()),

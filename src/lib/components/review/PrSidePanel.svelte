@@ -3,8 +3,9 @@
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import CircleDashed from '@lucide/svelte/icons/circle-dashed';
 	import CircleX from '@lucide/svelte/icons/circle-x';
-	import { formatRelativeTime, initialsFor } from '$lib/types';
+	import { formatRelativeTime } from '$lib/types';
 	import type { PrSummary } from '$lib/types';
+	import Avatar from './Avatar.svelte';
 
 	let { pr }: { pr: PrSummary } = $props();
 
@@ -26,7 +27,7 @@
 
 	<div class="mb-2 font-medium text-[15.5px] leading-[1.35]" style="color:var(--color-text)">{pr.title}</div>
 	<div class="mb-3.5 flex items-center gap-2 text-[11.5px]" style="color:var(--color-neutral-500)">
-		<img src={pr.author.avatarUrl} alt="" class="h-3.5 w-3.5 rounded-full" />{pr.author.login}
+		<Avatar author={pr.author} size={14} />{pr.author.login}
 		<span style="color:var(--color-neutral-700)">·</span>{formatRelativeTime(pr.createdAt)}
 	</div>
 
@@ -52,10 +53,7 @@
 	{#each allComments as c, i (i)}
 		<div class="mb-2 rounded-lg px-2.5 py-2.5" style="background:var(--color-surface-2);box-shadow:0 0 0 1px rgba(233,233,237,0.09)">
 			<div class="mb-1 flex items-center gap-2">
-				<span
-					class="flex h-[18px] w-[18px] items-center justify-center rounded-full font-medium text-[9px]"
-					style="background:var(--color-neutral-800);color:var(--color-neutral-300)">{initialsFor(c.author.login)}</span
-				>
+				<Avatar author={c.author} size={18} />
 				<span class="font-medium text-[11.5px]" style="color:var(--color-text)">{c.author.login}</span>
 				{#if c.file}
 					<span class="text-[10.5px]" style="font-family:var(--font-mono);color:var(--color-brand)">{c.file}{c.line ? `:${c.line}` : ''}</span>
