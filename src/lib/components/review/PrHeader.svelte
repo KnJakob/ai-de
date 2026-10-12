@@ -3,22 +3,23 @@
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import FileX from '@lucide/svelte/icons/file-x';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import Bot from '@lucide/svelte/icons/bot';
 	import MessageSquareText from '@lucide/svelte/icons/message-square-text';
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import GitCommitHorizontal from '@lucide/svelte/icons/git-commit-horizontal';
-	import { FILES, PR } from '$lib/mock/data';
+	import { FILES } from '$lib/mock/data';
 	import type { ReviewState } from '$lib/state.svelte';
-	import type { PrTab } from '$lib/types';
+	import { formatRelativeTime } from '$lib/types';
+	import type { PrSummary, PrTab } from '$lib/types';
 
-	let { state }: { state: ReviewState } = $props();
+	let { state, pr }: { state: ReviewState; pr: PrSummary } = $props();
 
-	const prTabs: { id: PrTab; label: string; Icon: typeof GitPullRequest; count: number }[] = [
-		{ id: 'conversation', label: 'Conversation', Icon: MessageSquareText, count: 3 },
+	// Files-changed stays mock for now (see TODO.md) — its tab count does too.
+	const prTabs: { id: PrTab; label: string; Icon: typeof GitPullRequest; count: number }[] = $derived([
+		{ id: 'conversation', label: 'Conversation', Icon: MessageSquareText, count: pr.comments.length + pr.reviewComments.length },
 		{ id: 'files', label: 'Files changed', Icon: FileCode, count: FILES.length },
-		{ id: 'commits', label: 'Commits', Icon: GitCommitHorizontal, count: 3 },
-		{ id: 'checks', label: 'Checks', Icon: CircleCheck, count: 3 }
-	];
+		{ id: 'commits', label: 'Commits', Icon: GitCommitHorizontal, count: pr.commits.length },
+		{ id: 'checks', label: 'Checks', Icon: CircleCheck, count: pr.checks.length }
+	]);
 </script>
 
 <div class="border-b px-[22px] pt-4" style="background:var(--color-header-2);border-color:var(--color-divider)">
@@ -29,7 +30,7 @@
 		>
 			<GitPullRequest size={11} />Open
 		</span>
-		<span class="text-[12px]" style="font-family:var(--font-mono);color:var(--color-neutral-600)">#{PR.number}</span>
+		<span class="text-[12px]" style="font-family:var(--font-mono);color:var(--color-neutral-600)">#{pr.number}</span>
 		<div class="flex-1"></div>
 
 		{#if !state.review}
@@ -37,6 +38,7 @@
 				<span class="mr-0.5 text-[11px]" style="color:var(--color-neutral-600)">Your review</span>
 				<button
 					onclick={() => state.approve()}
+					title="Local only — not sent to GitHub yet"
 					class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium text-[11.5px]"
 					style="border:1px solid var(--color-brand);color:var(--color-accent-300)"
 				>
@@ -44,6 +46,7 @@
 				</button>
 				<button
 					onclick={() => state.requestChanges()}
+					title="Local only — not sent to GitHub yet"
 					class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium text-[11.5px]"
 					style="border:1px solid var(--color-divider);color:var(--color-neutral-400)"
 				>
@@ -66,7 +69,7 @@
 		{/if}
 
 		<a
-			href="https://github.com"
+			href={pr.htmlUrl}
 			target="_blank"
 			rel="noreferrer"
 			class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium text-[11.5px] no-underline"
@@ -76,17 +79,17 @@
 		</a>
 	</div>
 
-	<div class="max-w-[820px] font-medium text-[22px] leading-[1.2] tracking-[-0.015em]" style="color:var(--color-text)">{PR.title}</div>
+	<div class="max-w-[820px] font-medium text-[22px] leading-[1.2] tracking-[-0.015em]" style="color:var(--color-text)">{pr.title}</div>
 
 	<div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-[12px]" style="color:var(--color-neutral-500)">
-		<Bot size={14} style="color:var(--color-brand)" />
-		<span class="font-medium" style="color:var(--color-neutral-300)">{PR.author}</span>
-		<span>wants to merge 3 commits into</span>
-		<span class="text-[11.5px]" style="font-family:var(--font-mono);color:var(--color-accent-400)">main</span>
+		<img src={pr.author.avatarUrl} alt="" class="h-3.5 w-3.5 rounded-full" />
+		<span class="font-medium" style="color:var(--color-neutral-300)">{pr.author.login}</span>
+		<span>wants to merge into</span>
+		<span class="text-[11.5px]" style="font-family:var(--font-mono);color:var(--color-accent-400)">{pr.baseRef}</span>
 		<span>from</span>
-		<span class="text-[11.5px]" style="font-family:var(--font-mono);color:var(--color-accent-400)">agent/debounce-watcher</span>
+		<span class="text-[11.5px]" style="font-family:var(--font-mono);color:var(--color-accent-400)">{pr.headRef}</span>
 		<span style="color:var(--color-neutral-700)">·</span>
-		<span>{PR.opened}</span>
+		<span>opened {formatRelativeTime(pr.createdAt)}</span>
 	</div>
 
 	<div class="mt-3 flex gap-0.5">

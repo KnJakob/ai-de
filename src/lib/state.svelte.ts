@@ -1,6 +1,23 @@
-import { getLiveDiff, pickWorkspaceFolder } from '$lib/backend';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import {
+	getLiveDiff,
+	getPrOverview,
+	pickWorkspaceFolder,
+	pollGithubDeviceFlow,
+	startGithubDeviceFlow
+} from '$lib/backend';
 import { DIFFS, FILES, INITIAL_NOTES } from '$lib/mock/data';
-import type { DiffLine, FileEntry, Note, PrTab, ReviewDecision, ReviewMode, SidePanelTab } from '$lib/types';
+import type {
+	DeviceCodeInfo,
+	DiffLine,
+	FileEntry,
+	Note,
+	PrOverview,
+	PrTab,
+	ReviewDecision,
+	ReviewMode,
+	SidePanelTab
+} from '$lib/types';
 import { filePath } from '$lib/types';
 
 // Single reactive store for the one open project tab. Mirrors the design's
@@ -17,7 +34,7 @@ export class ReviewState {
 	replyText = $state('');
 	wrap = $state(false);
 	shortcutsOpen = $state(false);
-	composerLine = $state<number | null>(52);
+	composerLine = $state<number | null>(null);
 	composerText = $state('');
 	notes = $state<Note[]>(INITIAL_NOTES);
 	#nextNoteId = 3;
@@ -55,6 +72,59 @@ export class ReviewState {
 		if (!picked) return;
 		this.workspacePath = picked;
 		await this.loadLiveDiff();
+		if (this.mode === 'pr') await this.loadPrOverview();
+	}
+
+	// Real PR for the current branch (src-tauri/src/github/pr.rs) — only
+	// fetched in PR mode, not eagerly on mount, since it needs a signed-in
+	// GitHub token the user may not have set up yet.
+	prOverview = $state<PrOverview | null>(null);
+	prOverviewLoading = $state(false);
+	prOverviewError = $state<string | null>(null);
+
+	async loadPrOverview() {
+		this.prOverviewLoading = true;
+		this.prOverviewError = null;
+		try {
+			this.prOverview = await getPrOverview(this.workspacePath ?? undefined);
+		} catch (e) {
+			this.prOverviewError = e instanceof Error ? e.message : String(e);
+		} finally {
+			this.prOverviewLoading = false;
+		}
+	}
+
+	// GitHub Device Flow sign-in (see src-tauri/src/github/device_flow.rs).
+	// signInInfo holds the user_code to display while pollGithubDeviceFlow
+	// blocks in the background waiting for approval on github.com.
+	signInInfo = $state<DeviceCodeInfo | null>(null);
+	signInPolling = $state(false);
+	signInError = $state<string | null>(null);
+
+	async startGithubSignIn() {
+		this.signInError = null;
+		try {
+			const info = await startGithubDeviceFlow();
+			this.signInInfo = info;
+			await openUrl(info.verificationUri);
+			this.signInPolling = true;
+			await pollGithubDeviceFlow(info);
+			this.signInInfo = null;
+			this.signInPolling = false;
+			await this.loadPrOverview();
+		} catch (e) {
+			this.signInError = e instanceof Error ? e.message : String(e);
+			this.signInPolling = false;
+		}
+	}
+
+	// Only hides the modal — the Rust-side poll has no cancellation token, so
+	// it keeps polling in the background until GitHub's device code expires
+	// (~15 min) or the user actually approves it elsewhere.
+	cancelGithubSignIn() {
+		this.signInInfo = null;
+		this.signInPolling = false;
+		this.signInError = null;
 	}
 
 	// Live mode (and the always-visible file tree) show the real git2 diff;
@@ -88,6 +158,9 @@ export class ReviewState {
 	setMode(mode: ReviewMode) {
 		this.mode = mode;
 		this.sidePanelTab = mode === 'history' ? 'blame' : 'notes';
+		if (mode === 'pr' && !this.prOverview && !this.prOverviewLoading) {
+			this.loadPrOverview();
+		}
 	}
 
 	toggleWrap() {
@@ -139,7 +212,6 @@ export class ReviewState {
 
 	divertReplyToNote() {
 		this.composerText = this.replyText;
-		this.composerLine = this.composerLine ?? 52;
 		this.sidePanelTab = 'notes';
 		this.replyText = '';
 	}
