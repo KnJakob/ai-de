@@ -1,6 +1,7 @@
 import { openUrl } from '@tauri-apps/plugin-opener';
 import {
 	getBranchInfo,
+	getCommitLog,
 	getLiveDiff,
 	getPrDetails,
 	getPrList,
@@ -10,6 +11,7 @@ import {
 } from '$lib/backend';
 import { DIFFS, FILES, INITIAL_NOTES } from '$lib/mock/data';
 import type {
+	CommitLogEntry,
 	DeviceCodeInfo,
 	DiffLine,
 	FileEntry,
@@ -136,12 +138,14 @@ export class ReviewState {
 		const picked = await pickWorkspaceFolder();
 		if (!picked) return;
 		this.workspacePath = picked;
-		// A different repo invalidates whatever PR list/selection we had.
+		// A different repo invalidates whatever PR list/selection/commit log we had.
 		this.prList = null;
 		this.selectedPrNumber = null;
 		this.prDetails = null;
+		this.commitLog = null;
 		await Promise.all([this.loadLiveDiff(), this.loadBranchInfo()]);
 		if (this.mode === 'pr') await this.loadPrList();
+		if (this.mode === 'history') await this.loadCommitLog();
 	}
 
 	// Every open PR on the repo (src-tauri/src/github/pr.rs) — only fetched
@@ -163,6 +167,24 @@ export class ReviewState {
 			this.prListError = e instanceof Error ? e.message : String(e);
 		} finally {
 			this.prListLoading = false;
+		}
+	}
+
+	// History mode's commit log (src-tauri/src/git/log.rs) — like prList,
+	// only fetched on entering History mode, not eagerly on mount.
+	commitLog = $state<CommitLogEntry[] | null>(null);
+	commitLogLoading = $state(false);
+	commitLogError = $state<string | null>(null);
+
+	async loadCommitLog() {
+		this.commitLogLoading = true;
+		this.commitLogError = null;
+		try {
+			this.commitLog = await getCommitLog(this.workspacePath ?? undefined);
+		} catch (e) {
+			this.commitLogError = e instanceof Error ? e.message : String(e);
+		} finally {
+			this.commitLogLoading = false;
 		}
 	}
 
@@ -254,6 +276,10 @@ export class ReviewState {
 	setMode(mode: ReviewMode) {
 		this.mode = mode;
 		this.sidePanelTab = mode === 'history' ? 'blame' : 'notes';
+		if (mode === 'history') {
+			if (!this.commitLog && !this.commitLogLoading) this.loadCommitLog();
+			return;
+		}
 		if (mode !== 'pr') return;
 		if (!this.prList && !this.prListLoading) this.loadPrList();
 		if (this.selectedPrNumber !== null && !this.prDetails && !this.prDetailsLoading) {

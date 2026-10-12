@@ -30,11 +30,13 @@ export type DiffLine =
 	| { kind: 'hunk'; range: string; context: string }
 	| { kind: 'add' | 'del' | 'ctx'; oldLine: number | null; newLine: number | null; text: string };
 
-export interface Commit {
+// Real commit log entry from get_commit_log (src-tauri/src/git/log.rs).
+// authorDate is unix seconds — convert with `new Date(authorDate * 1000)`.
+export interface CommitLogEntry {
 	sha: string;
 	subject: string;
-	author: string;
-	when: string;
+	authorName: string;
+	authorDate: number;
 }
 
 export interface BlameLine {

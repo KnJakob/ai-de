@@ -46,6 +46,7 @@
 			state.loadPrList();
 			if (state.selectedPrNumber !== null) state.selectPr(state.selectedPrNumber);
 		}
+		if (state.mode === 'history') state.loadCommitLog();
 		// No filesystem watcher yet (see docs/stack.md's notify-crate phase) —
 		// poll instead so Live mode doesn't go stale while an agent writes.
 		const interval = setInterval(() => state.loadLiveDiff(), 10_000);

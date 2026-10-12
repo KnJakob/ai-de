@@ -3,6 +3,7 @@ mod github;
 
 use git::branch::BranchInfo;
 use git::diff::LiveDiff;
+use git::log::CommitLogEntry;
 use github::device_flow;
 use github::pr::{self, PrDetailsResult, PrListResult};
 use github::token_store;
@@ -19,6 +20,13 @@ fn get_branch_info(path: Option<String>) -> Result<BranchInfo, String> {
     let repo = git2::Repository::discover(path.as_deref().unwrap_or("."))
         .map_err(|e| e.message().to_string())?;
     git::branch::info(&repo).map_err(|e| e.message().to_string())
+}
+
+#[tauri::command]
+fn get_commit_log(path: Option<String>) -> Result<Vec<CommitLogEntry>, String> {
+    let repo = git2::Repository::discover(path.as_deref().unwrap_or("."))
+        .map_err(|e| e.message().to_string())?;
+    git::log::commit_log(&repo).map_err(|e| e.message().to_string())
 }
 
 #[tauri::command]
@@ -59,6 +67,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_live_diff,
             get_branch_info,
+            get_commit_log,
             get_pr_list,
             get_pr_details,
             github_start_device_flow,
