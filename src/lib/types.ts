@@ -105,10 +105,24 @@ export interface PrSummary {
 	commits: PrCommitRow[];
 }
 
-export type PrOverview =
+export interface PrListItem {
+	number: number;
+	title: string;
+	author: PrAuthor;
+	headRef: string;
+	createdAt: string;
+	isCurrentBranch: boolean;
+}
+
+export type PrListResult =
 	| { kind: 'notAuthenticated' }
 	| { kind: 'noRemote' }
-	| { kind: 'noOpenPr'; owner: string; repo: string; branch: string }
+	| { kind: 'found'; owner: string; repo: string; prs: PrListItem[] };
+
+export type PrDetailsResult =
+	| { kind: 'notAuthenticated' }
+	| { kind: 'noRemote' }
+	| { kind: 'notFound' }
 	| ({ kind: 'found' } & PrSummary);
 
 export interface DeviceCodeInfo {

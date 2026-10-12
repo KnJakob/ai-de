@@ -1,26 +1,28 @@
 <script lang="ts">
 	import LogIn from '@lucide/svelte/icons/log-in';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
-	import GitPullRequest from '@lucide/svelte/icons/git-pull-request';
 	import type { Snippet } from 'svelte';
 	import type { ReviewState } from '$lib/state.svelte';
-	import type { PrSummary } from '$lib/types';
+	import type { PrListItem } from '$lib/types';
 
-	let { state, children }: { state: ReviewState; children: Snippet<[PrSummary]> } = $props();
+	let {
+		state,
+		children
+	}: { state: ReviewState; children: Snippet<[{ prs: PrListItem[]; owner: string; repo: string }]> } = $props();
 </script>
 
-{#if state.prOverviewLoading && !state.prOverview}
+{#if state.prListLoading && !state.prList}
 	<div class="flex min-h-0 flex-1 items-center justify-center text-[12.5px]" style="color:var(--color-neutral-600)">
-		Loading pull request…
+		Loading pull requests…
 	</div>
-{:else if state.prOverviewError}
+{:else if state.prListError}
 	<div class="flex min-h-0 flex-1 items-center justify-center p-6 text-center text-[12.5px]" style="color:var(--color-del)">
-		{state.prOverviewError}
+		{state.prListError}
 	</div>
-{:else if state.prOverview?.kind === 'notAuthenticated'}
+{:else if state.prList?.kind === 'notAuthenticated'}
 	<div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
 		<p class="max-w-[320px] text-[12.5px]" style="color:var(--color-neutral-500)">
-			Sign in with GitHub to see this branch's pull request, checks, and comments.
+			Sign in with GitHub to see this repo's pull requests, checks, and comments.
 		</p>
 		{#if state.signInInfo}
 			<div class="flex flex-col items-center gap-2 rounded-lg px-4 py-3" style="background:var(--color-surface-2);box-shadow:0 0 0 1px rgba(233,233,237,0.10)">
@@ -46,20 +48,11 @@
 			<span class="text-[11px]" style="color:var(--color-del)">{state.signInError}</span>
 		{/if}
 	</div>
-{:else if state.prOverview?.kind === 'noRemote'}
+{:else if state.prList?.kind === 'noRemote'}
 	<div class="flex min-h-0 flex-1 items-center justify-center p-6 text-center text-[12.5px]" style="color:var(--color-neutral-600)">
 		This folder isn't a GitHub repository (no "origin" remote pointing at github.com).
 	</div>
-{:else if state.prOverview?.kind === 'noOpenPr'}
-	{@const noPr = state.prOverview}
-	<div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
-		<GitPullRequest size={20} style="color:var(--color-neutral-600)" />
-		<span class="text-[12.5px]" style="color:var(--color-neutral-500)">
-			No open pull request for <span style="font-family:var(--font-mono);color:var(--color-neutral-400)">{noPr.branch}</span>
-			on {noPr.owner}/{noPr.repo}.
-		</span>
-	</div>
-{:else if state.prOverview?.kind === 'found'}
-	{@const pr = state.prOverview}
-	{@render children(pr)}
+{:else if state.prList?.kind === 'found'}
+	{@const list = state.prList}
+	{@render children({ prs: list.prs, owner: list.owner, repo: list.repo })}
 {/if}

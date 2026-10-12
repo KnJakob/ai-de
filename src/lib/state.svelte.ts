@@ -2,7 +2,8 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import {
 	getBranchInfo,
 	getLiveDiff,
-	getPrOverview,
+	getPrDetails,
+	getPrList,
 	pickWorkspaceFolder,
 	pollGithubDeviceFlow,
 	startGithubDeviceFlow
@@ -13,7 +14,8 @@ import type {
 	DiffLine,
 	FileEntry,
 	Note,
-	PrOverview,
+	PrDetailsResult,
+	PrListResult,
 	PrTab,
 	ReviewDecision,
 	ReviewMode,
@@ -32,6 +34,7 @@ export interface PersistedUiState {
 	prTab: PrTab;
 	sidePanelTab: SidePanelTab;
 	wrap: boolean;
+	selectedPrNumber: number | null;
 }
 
 const REVIEW_MODES: ReviewMode[] = ['live', 'pr', 'history'];
@@ -82,7 +85,7 @@ export class ReviewState {
 			this.defaultBranch = info.defaultBranch;
 		} catch (e) {
 			// No dedicated loading/error state here (unlike loadLiveDiff/
-			// loadPrOverview) — a git2 local lookup resolves in milliseconds
+			// loadPrList) — a git2 local lookup resolves in milliseconds
 			// and the "—" fallback already reads as "nothing to show". But
 			// swallowing the reason entirely would leave a real failure
 			// (e.g. a corrupted repo) with zero trace, so at least log it.
@@ -107,6 +110,9 @@ export class ReviewState {
 			this.sidePanelTab = restored.sidePanelTab;
 		}
 		if (typeof restored.wrap === 'boolean') this.wrap = restored.wrap;
+		if (typeof restored.selectedPrNumber === 'number') {
+			this.selectedPrNumber = restored.selectedPrNumber;
+		}
 	}
 
 	async loadLiveDiff() {
@@ -130,27 +136,58 @@ export class ReviewState {
 		const picked = await pickWorkspaceFolder();
 		if (!picked) return;
 		this.workspacePath = picked;
+		// A different repo invalidates whatever PR list/selection we had.
+		this.prList = null;
+		this.selectedPrNumber = null;
+		this.prDetails = null;
 		await Promise.all([this.loadLiveDiff(), this.loadBranchInfo()]);
-		if (this.mode === 'pr') await this.loadPrOverview();
+		if (this.mode === 'pr') await this.loadPrList();
 	}
 
-	// Real PR for the current branch (src-tauri/src/github/pr.rs) — only
-	// fetched in PR mode, not eagerly on mount, since it needs a signed-in
-	// GitHub token the user may not have set up yet.
-	prOverview = $state<PrOverview | null>(null);
-	prOverviewLoading = $state(false);
-	prOverviewError = $state<string | null>(null);
+	// Every open PR on the repo (src-tauri/src/github/pr.rs) — only fetched
+	// in PR mode, not eagerly on mount, since it needs a signed-in GitHub
+	// token the user may not have set up yet. The user picks one from this
+	// list; loadPrDetails then fetches that single PR's full comments/
+	// checks/commits (listing all of them for every open PR would be far
+	// too expensive).
+	prList = $state<PrListResult | null>(null);
+	prListLoading = $state(false);
+	prListError = $state<string | null>(null);
 
-	async loadPrOverview() {
-		this.prOverviewLoading = true;
-		this.prOverviewError = null;
+	async loadPrList() {
+		this.prListLoading = true;
+		this.prListError = null;
 		try {
-			this.prOverview = await getPrOverview(this.workspacePath ?? undefined);
+			this.prList = await getPrList(this.workspacePath ?? undefined);
 		} catch (e) {
-			this.prOverviewError = e instanceof Error ? e.message : String(e);
+			this.prListError = e instanceof Error ? e.message : String(e);
 		} finally {
-			this.prOverviewLoading = false;
+			this.prListLoading = false;
 		}
+	}
+
+	selectedPrNumber = $state<number | null>(null);
+	prDetails = $state<PrDetailsResult | null>(null);
+	prDetailsLoading = $state(false);
+	prDetailsError = $state<string | null>(null);
+
+	async selectPr(number: number) {
+		this.selectedPrNumber = number;
+		this.prDetailsLoading = true;
+		this.prDetailsError = null;
+		try {
+			this.prDetails = await getPrDetails(number, this.workspacePath ?? undefined);
+		} catch (e) {
+			this.prDetailsError = e instanceof Error ? e.message : String(e);
+		} finally {
+			this.prDetailsLoading = false;
+		}
+	}
+
+	backToPrList() {
+		this.selectedPrNumber = null;
+		this.prDetails = null;
+		this.prDetailsError = null;
 	}
 
 	// GitHub Device Flow sign-in (see src-tauri/src/github/device_flow.rs).
@@ -170,7 +207,7 @@ export class ReviewState {
 			await pollGithubDeviceFlow(info);
 			this.signInInfo = null;
 			this.signInPolling = false;
-			await this.loadPrOverview();
+			await this.loadPrList();
 		} catch (e) {
 			this.signInError = e instanceof Error ? e.message : String(e);
 			this.signInPolling = false;
@@ -217,8 +254,10 @@ export class ReviewState {
 	setMode(mode: ReviewMode) {
 		this.mode = mode;
 		this.sidePanelTab = mode === 'history' ? 'blame' : 'notes';
-		if (mode === 'pr' && !this.prOverview && !this.prOverviewLoading) {
-			this.loadPrOverview();
+		if (mode !== 'pr') return;
+		if (!this.prList && !this.prListLoading) this.loadPrList();
+		if (this.selectedPrNumber !== null && !this.prDetails && !this.prDetailsLoading) {
+			this.selectPr(this.selectedPrNumber);
 		}
 	}
 

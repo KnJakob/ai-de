@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import type { DeviceCodeInfo, DiffLine, FileEntry, PrOverview } from '$lib/types';
+import type { DeviceCodeInfo, DiffLine, FileEntry, PrDetailsResult, PrListResult } from '$lib/types';
 
 export interface LiveDiff {
 	files: FileEntry[];
@@ -26,8 +26,12 @@ export async function pickWorkspaceFolder(): Promise<string | null> {
 	return typeof result === 'string' ? result : null;
 }
 
-export function getPrOverview(path?: string): Promise<PrOverview> {
-	return invoke('get_pr_overview', { path: path ?? null });
+export function getPrList(path?: string): Promise<PrListResult> {
+	return invoke('get_pr_list', { path: path ?? null });
+}
+
+export function getPrDetails(number: number, path?: string): Promise<PrDetailsResult> {
+	return invoke('get_pr_details', { path: path ?? null, number });
 }
 
 export function startGithubDeviceFlow(): Promise<DeviceCodeInfo> {

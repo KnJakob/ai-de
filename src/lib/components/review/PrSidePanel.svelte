@@ -1,13 +1,15 @@
 <script lang="ts">
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import GitPullRequest from '@lucide/svelte/icons/git-pull-request';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import CircleDashed from '@lucide/svelte/icons/circle-dashed';
 	import CircleX from '@lucide/svelte/icons/circle-x';
+	import type { ReviewState } from '$lib/state.svelte';
 	import { formatRelativeTime } from '$lib/types';
 	import type { PrSummary } from '$lib/types';
 	import Avatar from './Avatar.svelte';
 
-	let { pr }: { pr: PrSummary } = $props();
+	let { state, pr }: { state: ReviewState; pr: PrSummary } = $props();
 
 	const allComments = $derived(
 		[...pr.comments, ...pr.reviewComments].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
@@ -15,6 +17,13 @@
 </script>
 
 <div class="min-h-0 flex-1 overflow-auto p-3.5">
+	<button
+		onclick={() => state.backToPrList()}
+		class="mb-2 flex items-center gap-1 text-[11px]"
+		style="color:var(--color-neutral-500)"
+	>
+		<ArrowLeft size={11} />All PRs
+	</button>
 	<div class="mb-2 flex items-center gap-2">
 		<span
 			class="inline-flex items-center gap-[5px] rounded-full px-2 py-0.5 font-medium text-[10.5px] tracking-[0.04em] uppercase"

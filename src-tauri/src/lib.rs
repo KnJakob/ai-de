@@ -4,7 +4,7 @@ mod github;
 use git::branch::BranchInfo;
 use git::diff::LiveDiff;
 use github::device_flow;
-use github::pr::{self, PrOverview};
+use github::pr::{self, PrDetailsResult, PrListResult};
 use tauri_plugin_keyring::KeyringExt;
 
 #[tauri::command]
@@ -22,8 +22,17 @@ fn get_branch_info(path: Option<String>) -> Result<BranchInfo, String> {
 }
 
 #[tauri::command]
-async fn get_pr_overview(app: tauri::AppHandle, path: Option<String>) -> Result<PrOverview, String> {
-    pr::get_overview(&app, path).await
+async fn get_pr_list(app: tauri::AppHandle, path: Option<String>) -> Result<PrListResult, String> {
+    pr::list_prs(&app, path).await
+}
+
+#[tauri::command]
+async fn get_pr_details(
+    app: tauri::AppHandle,
+    path: Option<String>,
+    number: u64,
+) -> Result<PrDetailsResult, String> {
+    pr::get_details(&app, path, number).await
 }
 
 #[tauri::command]
@@ -60,7 +69,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_live_diff,
             get_branch_info,
-            get_pr_overview,
+            get_pr_list,
+            get_pr_details,
             github_start_device_flow,
             github_poll_device_flow,
             github_sign_out

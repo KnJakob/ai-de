@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import GitPullRequest from '@lucide/svelte/icons/git-pull-request';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import FileX from '@lucide/svelte/icons/file-x';
@@ -25,6 +26,13 @@
 
 <div class="border-b px-[22px] pt-4" style="background:var(--color-header-2);border-color:var(--color-divider)">
 	<div class="mb-[7px] flex items-center gap-2.5">
+		<button
+			onclick={() => state.backToPrList()}
+			class="flex items-center gap-1 text-[11.5px]"
+			style="color:var(--color-neutral-500)"
+		>
+			<ArrowLeft size={12} />All PRs
+		</button>
 		<span
 			class="inline-flex items-center gap-[5px] rounded-full px-2.5 py-0.5 font-medium text-[10.5px] tracking-[0.06em] uppercase"
 			style="background:rgba(145,132,217,0.14);box-shadow:inset 0 0 0 1px rgba(145,132,217,0.45);color:var(--color-accent-300)"

@@ -24,15 +24,19 @@ PR header/conversation/checks/commits are real now (see below) — the
 `PR`/`TIMELINE`/`DIFF_SNIPPETS` mock constants and their one-off types were
 removed along with the old PR #128 placeholder.
 
-## Real PR overview (implemented)
+## Real PR list + details (implemented)
 
-`get_pr_overview` (`src-tauri/src/github/pr.rs`) detects the repo's GitHub
-owner/repo + current branch from the `origin` remote (`repo_ref.rs`), signs
-in via GitHub Device Flow (`device_flow.rs`, token stored through
-`tauri-plugin-keyring`), and fetches the open PR for that branch: title,
-author, body, issue + review comments (with `diff_hunk` snippets), check
-runs, and commits. Verified against real GitHub API responses (octocrab's
-own repo) during development, not just compiled.
+`src-tauri/src/github/pr.rs` detects the repo's GitHub owner/repo from the
+`origin` remote (`repo_ref.rs`) and signs in via GitHub Device Flow
+(`device_flow.rs`, token stored through `tauri-plugin-keyring`). Two
+commands: `get_pr_list` lists every open PR (lightweight — number, title,
+author, head branch — flagging whichever one matches the current checked-
+out branch); `get_pr_details` fetches one PR's full title, author, body,
+issue + review comments (with `diff_hunk` snippets), check runs, and
+commits once the user picks it from the list. Verified against real GitHub
+API responses (octocrab's own repo, 5 real PRs) during development, and
+the full list→select→back flow verified in a real browser with a stubbed
+IPC bridge (can't exercise the real Tauri IPC outside the actual webview).
 
 Still explicitly out of scope:
 - **Approve / Request changes / Comment** (`PrHeader.svelte` /

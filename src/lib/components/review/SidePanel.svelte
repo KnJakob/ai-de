@@ -6,20 +6,20 @@
 	import type { SidePanelTab } from '$lib/types';
 	import NotesPanel from './NotesPanel.svelte';
 	import PrGate from './PrGate.svelte';
+	import PrDetailsGate from './PrDetailsGate.svelte';
+	import PrListView from './PrListView.svelte';
 	import PrSidePanel from './PrSidePanel.svelte';
 	import BlamePanel from './BlamePanel.svelte';
 
 	let { state }: { state: ReviewState } = $props();
 
-	const prCommentCount = $derived(
-		state.prOverview?.kind === 'found' ? state.prOverview.comments.length + state.prOverview.reviewComments.length : 0
-	);
+	const openPrCount = $derived(state.prList?.kind === 'found' ? state.prList.prs.length : 0);
 
 	const tabs = $derived(
 		(
 			[
 				{ id: 'notes', label: state.mode === 'pr' ? 'Local notes' : 'Notes', Icon: Pin, count: state.notes.length },
-				...(state.mode === 'pr' ? [] : [{ id: 'pr', label: 'Pull request', Icon: GitPullRequest, count: prCommentCount }]),
+				...(state.mode === 'pr' ? [] : [{ id: 'pr', label: 'Pull request', Icon: GitPullRequest, count: openPrCount }]),
 				{ id: 'blame', label: 'Blame', Icon: Fingerprint, count: null }
 			] as { id: SidePanelTab; label: string; Icon: typeof Pin; count: number | null }[]
 		).filter((t) => (state.mode === 'pr' ? t.id !== 'pr' : true))
@@ -27,8 +27,8 @@
 
 	function selectTab(id: SidePanelTab) {
 		state.sidePanelTab = id;
-		if (id === 'pr' && !state.prOverview && !state.prOverviewLoading) {
-			state.loadPrOverview();
+		if (id === 'pr' && !state.prList && !state.prListLoading) {
+			state.loadPrList();
 		}
 	}
 </script>
@@ -54,8 +54,16 @@
 		<NotesPanel {state} />
 	{:else if state.sidePanelTab === 'pr'}
 		<PrGate {state}>
-			{#snippet children(pr)}
-				<PrSidePanel {pr} />
+			{#snippet children({ prs, owner, repo })}
+				{#if state.selectedPrNumber === null}
+					<PrListView {state} {prs} {owner} {repo} />
+				{:else}
+					<PrDetailsGate {state}>
+						{#snippet children(pr)}
+							<PrSidePanel {state} {pr} />
+						{/snippet}
+					</PrDetailsGate>
+				{/if}
 			{/snippet}
 		</PrGate>
 	{:else}
