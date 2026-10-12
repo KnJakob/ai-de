@@ -80,7 +80,13 @@ export class ReviewState {
 			const info = await getBranchInfo(this.workspacePath ?? undefined);
 			this.branch = info.branch;
 			this.defaultBranch = info.defaultBranch;
-		} catch {
+		} catch (e) {
+			// No dedicated loading/error state here (unlike loadLiveDiff/
+			// loadPrOverview) — a git2 local lookup resolves in milliseconds
+			// and the "—" fallback already reads as "nothing to show". But
+			// swallowing the reason entirely would leave a real failure
+			// (e.g. a corrupted repo) with zero trace, so at least log it.
+			console.error('[branch] failed to load branch info:', e);
 			this.branch = null;
 			this.defaultBranch = null;
 		}
