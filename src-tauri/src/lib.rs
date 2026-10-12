@@ -5,7 +5,7 @@ use git::branch::BranchInfo;
 use git::diff::LiveDiff;
 use github::device_flow;
 use github::pr::{self, PrDetailsResult, PrListResult};
-use tauri_plugin_keyring::KeyringExt;
+use github::token_store;
 
 #[tauri::command]
 fn get_live_diff(path: Option<String>) -> Result<LiveDiff, String> {
@@ -22,17 +22,13 @@ fn get_branch_info(path: Option<String>) -> Result<BranchInfo, String> {
 }
 
 #[tauri::command]
-async fn get_pr_list(app: tauri::AppHandle, path: Option<String>) -> Result<PrListResult, String> {
-    pr::list_prs(&app, path).await
+async fn get_pr_list(path: Option<String>) -> Result<PrListResult, String> {
+    pr::list_prs(path).await
 }
 
 #[tauri::command]
-async fn get_pr_details(
-    app: tauri::AppHandle,
-    path: Option<String>,
-    number: u64,
-) -> Result<PrDetailsResult, String> {
-    pr::get_details(&app, path, number).await
+async fn get_pr_details(path: Option<String>, number: u64) -> Result<PrDetailsResult, String> {
+    pr::get_details(path, number).await
 }
 
 #[tauri::command]
@@ -42,29 +38,23 @@ async fn github_start_device_flow() -> Result<device_flow::DeviceCodeInfo, Strin
 
 #[tauri::command]
 async fn github_poll_device_flow(
-    app: tauri::AppHandle,
     device_code: String,
     interval: u64,
     expires_in: u64,
 ) -> Result<(), String> {
     let token = device_flow::poll(&device_code, interval, expires_in).await?;
-    app.keyring()
-        .set_password(pr::KEYRING_SERVICE, pr::KEYRING_USER, &token)
-        .map_err(|e| e.to_string())
+    token_store::write_token(&token).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn github_sign_out(app: tauri::AppHandle) -> Result<(), String> {
-    app.keyring()
-        .delete_password(pr::KEYRING_SERVICE, pr::KEYRING_USER)
-        .map_err(|e| e.to_string())
+fn github_sign_out() -> Result<(), String> {
+    token_store::clear_token().map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_keyring::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             get_live_diff,

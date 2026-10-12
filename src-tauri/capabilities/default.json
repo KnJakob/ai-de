@@ -6,7 +6,6 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "keyring:default",
     "dialog:default"
   ]
 }

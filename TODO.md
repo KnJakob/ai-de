@@ -28,7 +28,9 @@ removed along with the old PR #128 placeholder.
 
 `src-tauri/src/github/pr.rs` detects the repo's GitHub owner/repo from the
 `origin` remote (`repo_ref.rs`) and signs in via GitHub Device Flow
-(`device_flow.rs`, token stored through `tauri-plugin-keyring`). Two
+(`device_flow.rs`, token stored plaintext in the project-root `.env` via
+`token_store.rs` — gitignored, not the OS keychain; see `CLAUDE.md` for why).
+Two
 commands: `get_pr_list` lists every open PR (lightweight — number, title,
 author, head branch — flagging whichever one matches the current checked-
 out branch); `get_pr_details` fetches one PR's full title, author, body,
@@ -64,8 +66,9 @@ for the write-action gap this covers):
   `get_live_diff` every 10s (`+page.svelte`) instead of reacting to
   real file-change events.
 
-(`octocrab` and `tauri-plugin-keyring` are now wired — see "Real PR
-overview" above.)
+(`octocrab` is now wired — see "Real PR list + details" above.
+`tauri-plugin-keyring` was wired too but has since been removed entirely —
+see the token storage note there.)
 
 ## Hardcoded display values (not derived from real state)
 

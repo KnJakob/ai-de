@@ -2,12 +2,9 @@ use octocrab::models::{self, pulls::PullRequest, Author};
 use octocrab::params::{repos::Commitish, State};
 use octocrab::Octocrab;
 use serde::Serialize;
-use tauri_plugin_keyring::KeyringExt;
 
 use super::repo_ref::{self, RepoRefError};
-
-pub const KEYRING_SERVICE: &str = "ai-de-github";
-pub const KEYRING_USER: &str = "oauth-token";
+use super::token_store;
 
 #[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -118,8 +115,8 @@ enum Gate {
 // Shared by both the list and the details fetch: resolve the repo from the
 // workspace path, then build an authenticated client from the stored
 // Device Flow token. Neither step talks to GitHub yet.
-async fn gate(app: &tauri::AppHandle, path: Option<String>) -> Result<Gate, String> {
-    let repo_ref = match repo_ref::resolve(path.as_deref()) {
+fn gate(path: Option<&str>) -> Result<Gate, String> {
+    let repo_ref = match repo_ref::resolve(path) {
         Ok(r) => r,
         Err(
             RepoRefError::NoOriginRemote
@@ -129,11 +126,7 @@ async fn gate(app: &tauri::AppHandle, path: Option<String>) -> Result<Gate, Stri
         ) => return Ok(Gate::NoRemote),
     };
 
-    let token = app
-        .keyring()
-        .get_password(KEYRING_SERVICE, KEYRING_USER)
-        .map_err(|e| e.to_string())?;
-    let Some(token) = token else {
+    let Some(token) = token_store::read_token() else {
         return Ok(Gate::NotAuthenticated);
     };
 
@@ -145,8 +138,8 @@ async fn gate(app: &tauri::AppHandle, path: Option<String>) -> Result<Gate, Stri
     Ok(Gate::Ready { octocrab, owner: repo_ref.owner, repo: repo_ref.repo, branch: repo_ref.branch })
 }
 
-pub async fn list_prs(app: &tauri::AppHandle, path: Option<String>) -> Result<PrListResult, String> {
-    let (octocrab, owner, repo, current_branch) = match gate(app, path).await? {
+pub async fn list_prs(path: Option<String>) -> Result<PrListResult, String> {
+    let (octocrab, owner, repo, current_branch) = match gate(path.as_deref())? {
         Gate::NotAuthenticated => return Ok(PrListResult::NotAuthenticated),
         Gate::NoRemote => return Ok(PrListResult::NoRemote),
         Gate::Ready { octocrab, owner, repo, branch } => (octocrab, owner, repo, branch),
@@ -174,12 +167,8 @@ pub async fn list_prs(app: &tauri::AppHandle, path: Option<String>) -> Result<Pr
     Ok(PrListResult::Found { owner, repo, prs })
 }
 
-pub async fn get_details(
-    app: &tauri::AppHandle,
-    path: Option<String>,
-    number: u64,
-) -> Result<PrDetailsResult, String> {
-    let (octocrab, owner, repo) = match gate(app, path).await? {
+pub async fn get_details(path: Option<String>, number: u64) -> Result<PrDetailsResult, String> {
+    let (octocrab, owner, repo) = match gate(path.as_deref())? {
         Gate::NotAuthenticated => return Ok(PrDetailsResult::NotAuthenticated),
         Gate::NoRemote => return Ok(PrDetailsResult::NoRemote),
         Gate::Ready { octocrab, owner, repo, .. } => (octocrab, owner, repo),
