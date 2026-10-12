@@ -27,7 +27,7 @@ When unsure whether something belongs in frontend or backend: if it transforms d
 - One `notify` watcher handle per open project tab, cleaned up properly when the tab is closed
 - Keep Rust structs and TS interfaces in sync (e.g. via `ts-rs` or `specta`) so backend and frontend don't drift apart
 - Handle errors explicitly at the boundaries: Git errors (no repo, corrupted state), GitHub rate limits, network errors — surface them clearly in the UI, don't just log them
-- Store the GitHub token in the project-root `.env` (gitignored), never in logs or error messages. (Was keyring-only; switched deliberately — macOS Keychain's "always allow" is tied to the binary's code signature, which changes on every dev rebuild, so `tauri dev` re-prompted for the Keychain password every run. Revisit once the app is code-signed for real distribution.)
+- Store the GitHub token in the project-root `.env` (gitignored), never in logs or error messages. (Was keyring-only; switched deliberately — macOS Keychain's "always allow" is tied to the binary's code signature, which changes on every dev rebuild, so `tauri dev` re-prompted for the Keychain password every run. Dev-machine-only as implemented: the `.env` path is resolved at compile time from the build machine's own checkout, so this needs a real rework — not just code-signing — before any distributed build.)
 - Write Rust unit tests for diff logic, Git operations, and notes persistence
 - Briefly justify new dependencies (bundle size/compile time matter in Tauri)
 

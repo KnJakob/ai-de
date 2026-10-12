@@ -6,11 +6,16 @@ use std::path::PathBuf;
 // Deliberately not the OS keychain: macOS ties "always allow" to the exact
 // code signature of the requesting binary, which changes on every dev
 // rebuild, so `tauri dev` re-prompted for the Keychain password on every
-// run. This trades that friction for a plaintext secret on disk — the
-// project's .gitignore already excludes .env, but this file is NOT suitable
-// for production builds the same way the keyring was.
+// run. The project's .gitignore already excludes .env.
 const KEY: &str = "GITHUB_TOKEN";
 
+// CARGO_MANIFEST_DIR is resolved at COMPILE time, to whatever machine/path
+// built this binary — fine for `cargo run`/`tauri dev` on one dev's own
+// checkout, completely broken for any compiled app that runs somewhere
+// else: it'd try to read/write a path from the build machine that doesn't
+// exist on the end user's system. Not a signing problem — a from-scratch
+// rework (e.g. Tauri's app_data_dir(), resolved at runtime) before this
+// goes anywhere near a distributed build.
 fn env_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join(".env")
 }

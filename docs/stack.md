@@ -37,7 +37,7 @@ Tauri desktop app for viewing code, diffs, and PRs from agent runs. **Read-only,
   - Fetch existing PR comments
   - Post own comments back through the API
   - **Auth:** OAuth Device Flow — no client secret needed (fits desktop apps), user logs in with their own GitHub account, app gets a user-scoped access token
-  - Token storage: plaintext `.env` at the project root (gitignored), not the OS keychain — macOS ties Keychain's "always allow" to the exact code signature of the requesting binary, which changes on every dev rebuild, so `tauri dev` re-prompted for the Keychain password every run. Deliberate tradeoff for dev-loop friction; revisit once the app is code-signed for real distribution.
+  - Token storage: plaintext `.env` at the project root (gitignored), not the OS keychain — macOS ties Keychain's "always allow" to the exact code signature of the requesting binary, which changes on every dev rebuild, so `tauri dev` re-prompted for the Keychain password every run. Deliberate tradeoff for dev-loop friction, but the `.env` path is also baked in at compile time from the build machine's own checkout (`CARGO_MANIFEST_DIR`) — this only works for `cargo run`/`tauri dev` on one dev's machine, and needs a real rework (not just code-signing) before any distributed build.
 - **Own notes:** JSON sidecar files (`serde_json`), no SQLite, no database overhead
   - Keying: repo path + commit hash + file path
   - Free-text notes on local diffs only, kept separate from PR comments (which go through GitHub)

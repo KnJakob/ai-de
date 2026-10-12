@@ -90,3 +90,12 @@ see the token storage note there.)
 - **Multi-project tabs** (`TitleBar.svelte`) — only one real workspace
   exists at a time (picked via the folder selector); the UI shows one tab,
   not the multi-tab system the original design mocked.
+- **GitHub token `.env` path is build-machine-specific** (`token_store.rs`)
+  — `env_path()` uses `CARGO_MANIFEST_DIR`, baked in at compile time from
+  whichever machine built the binary. Fine for `cargo run`/`tauri dev` on
+  one dev's own checkout; broken for any distributed build (it would read/
+  write a path from the build machine, not the end user's). Separate issue
+  from the Keychain signature-instability problem that motivated dropping
+  the keyring — code-signing fixes that one, not this one. Needs a runtime-
+  resolved path (e.g. Tauri's `app_data_dir()`) before this ships to anyone
+  else. See `docs/stack.md` and `CLAUDE.md` for the full note.
