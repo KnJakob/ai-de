@@ -249,6 +249,8 @@ export class ReviewState {
 	setActive(path: string) {
 		this.active = path;
 		this.composerLine = null;
+		this.hunkIndex = -1;
+		this.searchMatchIndex = -1;
 	}
 
 	setMode(mode: ReviewMode) {
@@ -259,6 +261,134 @@ export class ReviewState {
 		if (this.selectedPrNumber !== null && !this.prDetails && !this.prDetailsLoading) {
 			this.selectPr(this.selectedPrNumber);
 		}
+	}
+
+	setSidePanelTab(id: SidePanelTab) {
+		this.sidePanelTab = id;
+		if (id === 'pr' && !this.prList && !this.prListLoading) this.loadPrList();
+	}
+
+	// FileTree groups files by dir for display; next/prev-file navigation
+	// needs the exact same flattened order, so both read this.
+	get fileGroups(): { dir: string; files: FileEntry[] }[] {
+		const byDir = new Map<string, FileEntry[]>();
+		for (const f of this.activeFiles) {
+			const bucket = byDir.get(f.dir) ?? [];
+			bucket.push(f);
+			byDir.set(f.dir, bucket);
+		}
+		return [...byDir.entries()].map(([dir, files]) => ({ dir, files }));
+	}
+
+	get orderedFilePaths(): string[] {
+		return this.fileGroups.flatMap((g) => g.files.map(filePath));
+	}
+
+	nextFile() {
+		this.#stepFile(1);
+	}
+
+	prevFile() {
+		this.#stepFile(-1);
+	}
+
+	#stepFile(delta: number) {
+		const paths = this.orderedFilePaths;
+		if (paths.length === 0) return;
+		const i = paths.indexOf(this.active);
+		const next = i === -1 ? 0 : (i + delta + paths.length) % paths.length;
+		this.setActive(paths[next]);
+	}
+
+	// Index into currentHunks, not a row index directly — stays valid as a
+	// "which hunk am I on" pointer regardless of what else is in the diff.
+	hunkIndex = $state(-1);
+
+	get currentHunks(): number[] {
+		const rows = this.activeDiffs[this.active] ?? [];
+		return rows.reduce<number[]>((acc, r, i) => (r.kind === 'hunk' ? [...acc, i] : acc), []);
+	}
+
+	get currentHunkRowIndex(): number | null {
+		const hunks = this.currentHunks;
+		return this.hunkIndex >= 0 && this.hunkIndex < hunks.length ? hunks[this.hunkIndex] : null;
+	}
+
+	nextHunk() {
+		this.#stepHunk(1);
+	}
+
+	prevHunk() {
+		this.#stepHunk(-1);
+	}
+
+	#stepHunk(delta: number) {
+		const hunks = this.currentHunks;
+		if (hunks.length === 0) return;
+		this.hunkIndex = this.hunkIndex === -1 ? 0 : (this.hunkIndex + delta + hunks.length) % hunks.length;
+	}
+
+	// Search is scoped to the current diff only (not cross-file) — matches
+	// the rows currently on screen, same idea as vim's "/" inside one buffer.
+	searchOpen = $state(false);
+	searchQuery = $state('');
+	searchMatchIndex = $state(-1);
+
+	get searchMatches(): number[] {
+		const q = this.searchQuery.trim().toLowerCase();
+		if (!q) return [];
+		const rows = this.activeDiffs[this.active] ?? [];
+		return rows.reduce<number[]>((acc, r, i) => {
+			if (r.kind !== 'hunk' && r.text.toLowerCase().includes(q)) acc.push(i);
+			return acc;
+		}, []);
+	}
+
+	get currentMatchRowIndex(): number | null {
+		const matches = this.searchMatches;
+		return this.searchMatchIndex >= 0 && this.searchMatchIndex < matches.length
+			? matches[this.searchMatchIndex]
+			: null;
+	}
+
+	openSearch() {
+		this.searchOpen = true;
+	}
+
+	closeSearch() {
+		this.searchOpen = false;
+	}
+
+	setSearchQuery(query: string) {
+		this.searchQuery = query;
+		this.searchMatchIndex = this.searchMatches.length ? 0 : -1;
+	}
+
+	nextMatch() {
+		this.#stepMatch(1);
+	}
+
+	prevMatch() {
+		this.#stepMatch(-1);
+	}
+
+	#stepMatch(delta: number) {
+		const matches = this.searchMatches;
+		if (matches.length === 0) return;
+		this.searchMatchIndex = this.searchMatchIndex === -1 ? 0 : (this.searchMatchIndex + delta + matches.length) % matches.length;
+	}
+
+	// Scrolling the diff viewport is DOM-level, not app state — DiffView
+	// registers the actual scrollBy calls here on mount so d/u (and any
+	// other caller) don't need a ref into that component.
+	diffScroll: { down: () => void; up: () => void } | null = null;
+
+	scrollDiffDown() {
+		this.diffScroll?.down();
+	}
+
+	scrollDiffUp() {
+		this.diffScroll?.up();
 	}
 
 	toggleWrap() {

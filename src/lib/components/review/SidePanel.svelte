@@ -24,20 +24,13 @@
 			] as { id: SidePanelTab; label: string; Icon: typeof Pin; count: number | null }[]
 		).filter((t) => (state.mode === 'pr' ? t.id !== 'pr' : true))
 	);
-
-	function selectTab(id: SidePanelTab) {
-		state.sidePanelTab = id;
-		if (id === 'pr' && !state.prList && !state.prListLoading) {
-			state.loadPrList();
-		}
-	}
 </script>
 
 <div class="flex h-full min-h-0 flex-col border-l" style="background:var(--color-panel);border-color:var(--color-divider)">
 	<div class="flex h-[34px] gap-0 border-b px-2" style="border-color:var(--color-divider)">
 		{#each tabs as t (t.id)}
 			<button
-				onclick={() => selectTab(t.id)}
+				onclick={() => state.setSidePanelTab(t.id)}
 				class="flex items-center gap-1.5 px-2.5 font-medium text-[12px]"
 				style:color={state.sidePanelTab === t.id ? 'var(--color-text)' : 'var(--color-neutral-500)'}
 				style:box-shadow={state.sidePanelTab === t.id ? 'inset 0 -2px 0 0 var(--color-brand)' : 'none'}

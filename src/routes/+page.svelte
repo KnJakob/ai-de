@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { ReviewState, type PersistedUiState } from '$lib/state.svelte';
+	import { COMMANDS } from '$lib/keymap/commands';
+	import { createKeymapHandler } from '$lib/keymap/engine';
 	import TitleBar from '$lib/components/review/TitleBar.svelte';
 	import ModeBar from '$lib/components/review/ModeBar.svelte';
 	import FileTree from '$lib/components/review/FileTree.svelte';
@@ -52,12 +54,7 @@
 		return () => clearInterval(interval);
 	});
 
-	function onKeydown(e: KeyboardEvent) {
-		if (e.key === '/' && (e.metaKey || e.ctrlKey || e.shiftKey)) {
-			e.preventDefault();
-			state.toggleShortcuts();
-		}
-	}
+	const onKeydown = createKeymapHandler(state, COMMANDS);
 </script>
 
 <svelte:window onkeydown={onKeydown} />
