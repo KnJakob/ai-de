@@ -1,6 +1,13 @@
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import type { DeviceCodeInfo, DiffLine, FileEntry, PrDetailsResult, PrListResult } from '$lib/types';
+import type {
+	CommitLogEntry,
+	DeviceCodeInfo,
+	DiffLine,
+	FileEntry,
+	PrDetailsResult,
+	PrListResult
+} from '$lib/types';
 
 export interface LiveDiff {
 	files: FileEntry[];
@@ -18,6 +25,10 @@ export interface BranchInfo {
 
 export function getBranchInfo(path?: string): Promise<BranchInfo> {
 	return invoke('get_branch_info', { path: path ?? null });
+}
+
+export function getCommitLog(path?: string): Promise<CommitLogEntry[]> {
+	return invoke('get_commit_log', { path: path ?? null });
 }
 
 // Native OS folder picker. Returns null if the user cancels.

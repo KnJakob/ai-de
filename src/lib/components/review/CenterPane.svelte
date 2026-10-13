@@ -45,6 +45,6 @@
 		<DiffFileHeader {state} />
 		<DiffView {state} />
 	{:else if state.mode === 'history'}
-		<CommitLogView />
+		<CommitLogView {state} />
 	{/if}
 </div>

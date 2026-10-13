@@ -1,4 +1,4 @@
-import type { BlameLine, Commit, DiffLine, FileEntry, Note, ShortcutGroup } from '$lib/types';
+import type { BlameLine, DiffLine, FileEntry, Note, ShortcutGroup } from '$lib/types';
 
 export const FILES: FileEntry[] = [
 	{ dir: 'src-tauri/src/git', name: 'watcher.rs', status: 'M', added: 24, removed: 6 },
@@ -109,15 +109,6 @@ export const DIFFS: Record<string, DiffLine[]> = {
 		{ kind: 'ctx', oldLine: 22, newLine: 24, text: 'serde_json = "1.0"' }
 	]
 };
-
-export const COMMITS: Commit[] = [
-	{ sha: '4f1c9ab', subject: 'feat(git-watcher): debounce agent write bursts', author: 'agent/claude-code', when: '4 min ago' },
-	{ sha: 'b02d117', subject: 'feat(git-diff): structured hunk payload from Rust', author: 'agent/claude-code', when: '38 min ago' },
-	{ sha: '9ae4402', subject: 'refactor(ui): move diff flattening out of Svelte', author: 'K. Jakob', when: '2 hours ago' },
-	{ sha: '77b1e5d', subject: 'fix(github-auth): retry device-flow polling on 428', author: 'K. Jakob', when: 'yesterday' },
-	{ sha: 'c31f880', subject: 'feat(notes): JSON sidecar keyed by repo + commit + path', author: 'agent/claude-code', when: '2 days ago' },
-	{ sha: '1d6aa93', subject: 'chore(tauri): drop Windows targets from bundle config', author: 'K. Jakob', when: '3 days ago' }
-];
 
 export const BLAME: BlameLine[] = [
 	{ line: 43, sha: '9ae4402', subject: 'refactor(ui): move diff flattening out of Svelte', author: 'K. Jakob', when: '2 hours ago' },
