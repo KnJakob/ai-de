@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Pin from '@lucide/svelte/icons/pin';
 	import Plus from '@lucide/svelte/icons/plus';
 	import X from '@lucide/svelte/icons/x';
@@ -14,9 +15,71 @@
 		for (const n of state.notesFor(state.active)) map.set(n.line, n);
 		return map;
 	});
+	const matchSet = $derived(new Set(state.searchMatches));
+
+	// Keyed by row index (the each block below is keyed the same way), so a
+	// hunk/match jump can scroll straight to the right row regardless of kind.
+	let rowEls: (HTMLElement | null)[] = [];
+	let scrollEl: HTMLDivElement | undefined;
+
+	function scrollDiff(dir: 1 | -1) {
+		if (!scrollEl) return;
+		scrollEl.scrollBy({ top: dir * scrollEl.clientHeight * 0.5, behavior: 'smooth' });
+	}
+
+	// DiffView mounts/unmounts with the pane (e.g. switching away from Live
+	// mode), so register the handle once per mount rather than reactively —
+	// scrollEl itself never needs to be reactive.
+	onMount(() => {
+		state.diffScroll = { down: () => scrollDiff(1), up: () => scrollDiff(-1) };
+		return () => {
+			state.diffScroll = null;
+		};
+	});
+
+	$effect(() => {
+		const idx = state.currentHunkRowIndex;
+		if (idx !== null) rowEls[idx]?.scrollIntoView({ block: 'center' });
+	});
+
+	$effect(() => {
+		const idx = state.currentMatchRowIndex;
+		if (idx !== null) rowEls[idx]?.scrollIntoView({ block: 'center' });
+	});
+
+	function onSearchKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			state.closeSearch();
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			state.setSearchQuery('');
+			state.closeSearch();
+		}
+	}
 </script>
 
-<div class="min-h-0 flex-1 overflow-auto py-1.5" style="background:var(--color-bg)">
+<div bind:this={scrollEl} class="min-h-0 flex-1 overflow-auto py-1.5" style="background:var(--color-bg)">
+	{#if state.searchOpen}
+		<div
+			class="sticky top-0 z-10 flex items-center gap-2 border-b px-3.5 py-1.5"
+			style="background:var(--color-surface-2);border-color:var(--color-divider)"
+		>
+			<span class="text-[11px]" style="color:var(--color-neutral-600)">/</span>
+			<input
+				value={state.searchQuery}
+				oninput={(e) => state.setSearchQuery((e.currentTarget as HTMLInputElement).value)}
+				onkeydown={onSearchKeydown}
+				placeholder="Search this diff…"
+				autofocus
+				class="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none"
+				style="color:var(--color-text);font-family:var(--font-mono)"
+			/>
+			<span class="text-[11px]" style="font-family:var(--font-mono);color:var(--color-neutral-600)">
+				{state.searchMatches.length ? `${state.searchMatchIndex + 1}/${state.searchMatches.length}` : '0/0'}
+			</span>
+		</div>
+	{/if}
 	{#if state.mode === 'live' && rows.length === 0}
 		<div class="px-3.5 py-4 text-[12.5px]" style="color:var(--color-neutral-600)">
 			{#if state.liveDiffLoading}
@@ -31,10 +94,14 @@
 		</div>
 	{/if}
 	{#each rows as row, i (i)}
+		{@const isCurrentMatch = i === state.currentMatchRowIndex}
+		{@const isMatch = !isCurrentMatch && matchSet.has(i)}
 		{#if row.kind === 'hunk'}
 			<div
+				bind:this={rowEls[i]}
 				class="my-3.5 flex items-center gap-2.5 border-y px-3.5 py-1"
 				style="background:var(--color-surface-2);border-color:rgba(233,233,237,0.08)"
+				style:box-shadow={i === state.currentHunkRowIndex ? '0 0 0 1px var(--color-brand) inset' : 'none'}
 			>
 				<span class="font-medium text-[11px]" style="font-family:var(--font-mono);color:var(--color-brand)">{row.range}</span>
 				<span class="text-[11px]" style="font-family:var(--font-mono);color:var(--color-neutral-600)">{row.context}</span>
@@ -44,9 +111,15 @@
 			{@const isDel = row.kind === 'del'}
 			{@const note = row.newLine ? notesByLine.get(row.newLine) : undefined}
 			<div
+				bind:this={rowEls[i]}
 				class="grid grid-cols-[26px_46px_46px_16px_minmax(0,1fr)] items-start border-l-2"
 				style:background={isAdd ? 'var(--color-add-bg)' : isDel ? 'var(--color-del-bg)' : 'transparent'}
 				style:border-color={isAdd ? 'var(--color-add-edge)' : isDel ? 'var(--color-del-edge)' : 'transparent'}
+				style:box-shadow={isCurrentMatch
+					? '0 0 0 1px var(--color-brand) inset'
+					: isMatch
+						? '0 0 0 1px rgba(145,132,217,0.35) inset'
+						: 'none'}
 			>
 				<button
 					disabled={!row.newLine}

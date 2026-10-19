@@ -1,4 +1,4 @@
-import type { BlameLine, DiffLine, FileEntry, Note, ShortcutGroup } from '$lib/types';
+import type { BlameLine, Commit, DiffLine, FileEntry, Note, ShortcutGroup } from '$lib/types';
 
 export const FILES: FileEntry[] = [
 	{ dir: 'src-tauri/src/git', name: 'watcher.rs', status: 'M', added: 24, removed: 6 },
@@ -119,45 +119,6 @@ export const BLAME: BlameLine[] = [
 	{ line: 66, sha: 'e88c204', subject: 'feat(watch): one notify handle per project tab', author: 'K. Jakob', when: '6 days ago' },
 	{ line: 75, sha: '2ab7f19', subject: 'feat(tabs): close a project tab cleanly', author: 'K. Jakob', when: '5 days ago' },
 	{ line: 76, sha: '4f1c9ab', subject: 'feat(git-watcher): debounce agent write bursts', author: 'agent/claude-code', when: '4 min ago' }
-];
-
-export const SHORTCUTS: ShortcutGroup[] = [
-	{
-		name: 'Navigate',
-		items: [
-			{ key: 'j / k', label: 'Next / previous file' },
-			{ key: '] / [', label: 'Next / previous hunk' },
-			{ key: '⌘P', label: 'Jump to file' },
-			{ key: '⌘K', label: 'Command palette' }
-		]
-	},
-	{
-		name: 'Review',
-		items: [
-			{ key: 'n', label: 'Pin note on line' },
-			{ key: 'b', label: 'Blame for this line' },
-			{ key: 'v', label: 'Mark file viewed' },
-			{ key: 'w', label: 'Toggle word wrap' }
-		]
-	},
-	{
-		name: 'Panels',
-		items: [
-			{ key: '⌘1', label: 'Notes' },
-			{ key: '⌘2', label: 'Pull request' },
-			{ key: '⌘3', label: 'Blame' },
-			{ key: '⌘\\', label: 'Hide side panel' }
-		]
-	},
-	{
-		name: 'Sources',
-		items: [
-			{ key: '⌘L', label: 'Live diff' },
-			{ key: '⌘R', label: 'Refresh from Git' },
-			{ key: '⌘H', label: 'History / log' },
-			{ key: '⌘/', label: 'This sheet' }
-		]
-	}
 ];
 
 export const INITIAL_NOTES: Note[] = [

@@ -6,20 +6,14 @@
 
 	let { state }: { state: ReviewState } = $props();
 
-	const groups = $derived.by(() => {
-		// git2 delivers deltas in alphabetical path order, so files that share
-		// a dir aren't necessarily adjacent (e.g. "src/lib/backend.ts" and
-		// "src/lib/state.svelte.ts" sort with "src/lib/components/" and
-		// "src/lib/mock/" in between) — bucket by dir instead of assuming runs.
-		const byDir = new Map<string, { path: string; name: string; status: string; added: number; removed: number }[]>();
-		for (const f of state.files) {
-			const path = filePath(f);
-			const bucket = byDir.get(f.dir) ?? [];
-			bucket.push({ path, name: f.name, status: f.status, added: f.added, removed: f.removed });
-			byDir.set(f.dir, bucket);
-		}
-		return [...byDir.entries()].map(([dir, files]) => ({ dir, files }));
-	});
+	// Sourced from state.fileGroups rather than re-bucketing locally, so this
+	// list stays in the exact same order next/prev-file navigation uses.
+	const groups = $derived(
+		state.fileGroups.map((g) => ({
+			dir: g.dir,
+			files: g.files.map((f) => ({ path: filePath(f), name: f.name, status: f.status, added: f.added, removed: f.removed }))
+		}))
+	);
 
 	const statusColor: Record<string, string> = {
 		A: 'var(--color-add)',

@@ -1,10 +1,23 @@
 <script lang="ts">
 	import Keyboard from '@lucide/svelte/icons/keyboard';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { SHORTCUTS } from '$lib/mock/data';
+	import { COMMANDS } from '$lib/keymap/commands';
 	import type { ReviewState } from '$lib/state.svelte';
+	import type { ShortcutGroup } from '$lib/types';
 
 	let { state }: { state: ReviewState } = $props();
+
+	// Generated from the command registry, not hand-maintained — this sheet
+	// can't drift from what's actually bound.
+	const groups = $derived.by((): ShortcutGroup[] => {
+		const byGroup = new Map<string, { key: string; label: string }[]>();
+		for (const c of COMMANDS) {
+			const items = byGroup.get(c.group) ?? [];
+			items.push({ key: c.display, label: c.label });
+			byGroup.set(c.group, items);
+		}
+		return [...byGroup.entries()].map(([name, items]) => ({ name, items }));
+	});
 </script>
 
 <Dialog.Root bind:open={state.shortcutsOpen}>
@@ -22,7 +35,7 @@
 			</div>
 			<div class="mb-4 text-[12px]" style="color:var(--color-neutral-500)">Reviewing is a keyboard job — the mouse is optional.</div>
 			<div class="grid grid-cols-2 gap-x-[34px] gap-y-[22px]">
-				{#each SHORTCUTS as g (g.name)}
+				{#each groups as g (g.name)}
 					<div>
 						<div class="mb-2 font-medium text-[10px] tracking-[0.10em] uppercase" style="color:var(--color-neutral-600)">{g.name}</div>
 						{#each g.items as s (s.key)}
