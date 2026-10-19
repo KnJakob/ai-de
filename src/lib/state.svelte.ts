@@ -134,6 +134,15 @@ export class ReviewState {
 		}
 	}
 
+	// TitleBar's "Refresh from Git" button — in PR mode, also re-fetch PR
+	// data (the list, or the open PR's details if one is selected).
+	async refresh() {
+		await this.loadLiveDiff();
+		if (this.mode !== 'pr') return;
+		if (this.selectedPrNumber !== null) await this.selectPr(this.selectedPrNumber);
+		else await this.loadPrList();
+	}
+
 	async pickWorkspace() {
 		const picked = await pickWorkspaceFolder();
 		if (!picked) return;
