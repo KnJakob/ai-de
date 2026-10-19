@@ -16,8 +16,15 @@
 		Loading pull requests…
 	</div>
 {:else if state.prListError}
-	<div class="flex min-h-0 flex-1 items-center justify-center p-6 text-center text-[12.5px]" style="color:var(--color-del)">
-		{state.prListError}
+	<div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+		<span class="text-[12.5px]" style="color:var(--color-del)">{state.prListError}</span>
+		<button
+			onclick={() => state.githubSignOut()}
+			class="text-[11px]"
+			style="color:var(--color-neutral-600)"
+		>
+			Sign out of GitHub
+		</button>
 	</div>
 {:else if state.prList?.kind === 'notAuthenticated'}
 	<div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">

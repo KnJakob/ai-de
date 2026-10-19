@@ -7,6 +7,7 @@ import {
 	getPrList,
 	pickWorkspaceFolder,
 	pollGithubDeviceFlow,
+	signOutGithub,
 	startGithubDeviceFlow
 } from '$lib/backend';
 import { DIFFS, FILES, INITIAL_NOTES } from '$lib/mock/data';
@@ -252,6 +253,13 @@ export class ReviewState {
 		this.signInInfo = null;
 		this.signInPolling = false;
 		this.signInError = null;
+	}
+
+	// Clears the stored token (e.g. after it's expired/revoked and PR
+	// fetches started failing) and falls back to the sign-in gate.
+	async githubSignOut() {
+		await signOutGithub();
+		await this.loadPrList();
 	}
 
 	// Live mode (and the always-visible file tree) show the real git2 diff;

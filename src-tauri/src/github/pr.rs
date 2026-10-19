@@ -6,6 +6,17 @@ use serde::Serialize;
 use super::repo_ref::{self, RepoRefError};
 use super::token_store;
 
+// octocrab::Error::GitHub has no custom Display impl, so e.to_string()
+// on it yields the bare variant name "GitHub" — the actual API message
+// (bad credentials, rate limit, 404, ...) lives on the boxed source and
+// is otherwise silently dropped.
+fn describe(e: octocrab::Error) -> String {
+    match e {
+        octocrab::Error::GitHub { source, .. } => format!("GitHub: {}", source.message),
+        e => e.to_string(),
+    }
+}
+
 #[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PrAuthor {
@@ -133,7 +144,7 @@ fn gate(path: Option<&str>) -> Result<Gate, String> {
     let octocrab = Octocrab::builder()
         .personal_token(token)
         .build()
-        .map_err(|e| e.to_string())?;
+        .map_err(describe)?;
 
     Ok(Gate::Ready { octocrab, owner: repo_ref.owner, repo: repo_ref.repo, branch: repo_ref.branch })
 }
@@ -151,7 +162,7 @@ pub async fn list_prs(path: Option<String>) -> Result<PrListResult, String> {
         .state(State::Open)
         .send()
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(describe)?
         .items
         .iter()
         .map(|pr| PrListItem {
@@ -179,7 +190,7 @@ pub async fn get_details(path: Option<String>, number: u64) -> Result<PrDetailsR
         Err(octocrab::Error::GitHub { source, .. }) if source.status_code.as_u16() == 404 => {
             return Ok(PrDetailsResult::NotFound)
         }
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(describe(e)),
     };
 
     build_summary(&octocrab, &owner, &repo, pr).await.map(PrDetailsResult::Found)
@@ -198,7 +209,7 @@ async fn build_summary(
         .list_comments(pr.number)
         .send()
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(describe)?
         .items
         .iter()
         .map(|c| PrCommentRow {
@@ -216,7 +227,7 @@ async fn build_summary(
         .list_comments(Some(pr.number))
         .send()
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(describe)?
         .items
         .iter()
         .map(|c| PrCommentRow {
@@ -234,7 +245,7 @@ async fn build_summary(
         .list_check_runs_for_git_ref(Commitish(pr.head.sha.clone()))
         .send()
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(describe)?
         .check_runs
         .iter()
         .map(check_run_to_row)
@@ -245,7 +256,7 @@ async fn build_summary(
         .pr_commits(pr.number)
         .send()
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(describe)?
         .items
         .iter()
         .map(|c| PrCommitRow {
