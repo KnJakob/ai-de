@@ -10,7 +10,7 @@ import {
 	signOutGithub,
 	startGithubDeviceFlow
 } from '$lib/backend';
-import { DIFFS, FILES, INITIAL_NOTES } from '$lib/mock/data';
+import { FILES, INITIAL_NOTES } from '$lib/mock/data';
 import type {
 	CommitLogEntry,
 	DeviceCodeInfo,
@@ -65,7 +65,9 @@ export class ReviewState {
 
 	// Real workdir-vs-HEAD diff from the Rust backend (git2) — Live mode and
 	// the always-visible file tree read from these, not from mock data.
-	// PR/History/Blame stay mock until GitHub/log integration exists.
+	// PR mode reads its own files/diffs off prDetails instead (see
+	// activeFiles/activeDiffs below); History/Blame stay mock until log
+	// integration exists.
 	// workspacePath is null until the user picks a folder, meaning "whatever
 	// repo the app's cwd sits in" — the same default get_live_diff always had.
 	workspacePath = $state<string | null>(null);
@@ -263,9 +265,10 @@ export class ReviewState {
 	}
 
 	// Live mode (and the always-visible file tree) show the real git2 diff;
-	// PR mode keeps its own fictional file list rather than colliding with
-	// whatever the repo's actual working tree looks like. DiffFileHeader and
-	// DiffView both need this same selection, so it lives here once.
+	// PR mode shows the selected PR's real changed files (from
+	// get_pr_details) instead, or nothing while on the PR list with no PR
+	// selected yet. DiffFileHeader and DiffView both need this same
+	// selection, so it lives here once.
 	// Falls back to "ai-de" before a folder is picked, matching the app's
 	// own repo — the one get_live_diff defaults to discovering from cwd.
 	get workspaceName(): string {
@@ -274,11 +277,13 @@ export class ReviewState {
 	}
 
 	get activeFiles(): FileEntry[] {
-		return this.mode === 'pr' ? FILES : this.files;
+		if (this.mode !== 'pr') return this.files;
+		return this.prDetails?.kind === 'found' ? this.prDetails.files : [];
 	}
 
 	get activeDiffs(): Record<string, DiffLine[]> {
-		return this.mode === 'pr' ? DIFFS : this.diffs;
+		if (this.mode !== 'pr') return this.diffs;
+		return this.prDetails?.kind === 'found' ? this.prDetails.diffs : {};
 	}
 
 	notesFor(path: string): Note[] {

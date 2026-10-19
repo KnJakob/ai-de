@@ -1,7 +1,12 @@
+use std::collections::HashMap;
+
+use octocrab::models::repos::{DiffEntry, DiffEntryStatus};
 use octocrab::models::{self, pulls::PullRequest, Author};
 use octocrab::params::{repos::Commitish, State};
 use octocrab::Octocrab;
 use serde::Serialize;
+
+use crate::git::diff::{split_path, DiffRow, FileEntry};
 
 use super::repo_ref::{self, RepoRefError};
 use super::token_store;
@@ -84,6 +89,8 @@ pub struct PrSummary {
     pub review_comments: Vec<PrCommentRow>,
     pub checks: Vec<PrCheckRun>,
     pub commits: Vec<PrCommitRow>,
+    pub files: Vec<FileEntry>,
+    pub diffs: HashMap<String, Vec<DiffRow>>,
 }
 
 // Lightweight row for the picker — listing every open PR would be far too
@@ -267,6 +274,8 @@ async fn build_summary(
         })
         .collect();
 
+    let (files, diffs) = fetch_files(octocrab, owner, repo, pr.number).await?;
+
     Ok(PrSummary {
         number: pr.number,
         title: pr.title.unwrap_or_default(),
@@ -280,7 +289,99 @@ async fn build_summary(
         review_comments,
         checks,
         commits,
+        files,
+        diffs,
     })
+}
+
+// The PR's changed files, in the same FileEntry/DiffRow shape get_live_diff
+// uses — GitHub's per-file `patch` is a unified-diff hunk list (no file
+// header lines), so it needs its own parser rather than git2's foreach.
+async fn fetch_files(
+    octocrab: &Octocrab,
+    owner: &str,
+    repo: &str,
+    number: u64,
+) -> Result<(Vec<FileEntry>, HashMap<String, Vec<DiffRow>>), String> {
+    let entries = octocrab.pulls(owner, repo).list_files(number).await.map_err(describe)?.items;
+
+    let mut files = Vec::with_capacity(entries.len());
+    let mut diffs = HashMap::with_capacity(entries.len());
+    for entry in entries {
+        let DiffEntry { filename, status, additions, deletions, patch, .. } = entry;
+        let (dir, name) = split_path(&filename);
+        files.push(FileEntry {
+            dir,
+            name,
+            status: diff_status_letter(&status).to_string(),
+            added: additions as u32,
+            removed: deletions as u32,
+        });
+        diffs.insert(filename, patch.as_deref().map(parse_patch).unwrap_or_default());
+    }
+    Ok((files, diffs))
+}
+
+fn diff_status_letter(status: &DiffEntryStatus) -> &'static str {
+    match status {
+        DiffEntryStatus::Added => "A",
+        DiffEntryStatus::Removed => "D",
+        _ => "M",
+    }
+}
+
+// Parses a GitHub unified-diff patch (just the @@ hunks, no "--- a/..."
+// file header) into the frontend's DiffLine rows. Mirrors git2's hunk/line
+// callbacks in git/diff.rs, but GitHub hands us hunks as plain text instead
+// of letting us walk them via callbacks.
+fn parse_patch(patch: &str) -> Vec<DiffRow> {
+    let mut rows = Vec::new();
+    let mut old_line = 0u32;
+    let mut new_line = 0u32;
+    for line in patch.lines() {
+        if let Some(rest) = line.strip_prefix("@@ ") {
+            let Some(end) = rest.find("@@") else { continue };
+            let spec = &rest[..end];
+            if let Some((old_start, new_start)) = parse_hunk_starts(spec) {
+                old_line = old_start;
+                new_line = new_start;
+            }
+            rows.push(DiffRow::Hunk {
+                range: format!("@@ {spec}@@").trim().to_string(),
+                context: rest[end + 2..].trim().to_string(),
+            });
+            continue;
+        }
+        match line.as_bytes().first() {
+            Some(b'+') => {
+                rows.push(DiffRow::Add { old_line: None, new_line: Some(new_line), text: line[1..].to_string() });
+                new_line += 1;
+            }
+            Some(b'-') => {
+                rows.push(DiffRow::Del { old_line: Some(old_line), new_line: None, text: line[1..].to_string() });
+                old_line += 1;
+            }
+            // "\ No newline at end of file"
+            Some(b'\\') => {}
+            _ => {
+                let text = line.strip_prefix(' ').unwrap_or(line).to_string();
+                rows.push(DiffRow::Ctx { old_line: Some(old_line), new_line: Some(new_line), text });
+                old_line += 1;
+                new_line += 1;
+            }
+        }
+    }
+    rows
+}
+
+// spec looks like "-12,6 +12,8 " (or "-0,0 +1 " for single-line ranges) —
+// the hunk's starting line numbers, before the per-line counters above walk
+// forward through the hunk.
+fn parse_hunk_starts(spec: &str) -> Option<(u32, u32)> {
+    let mut parts = spec.split_whitespace();
+    let old_start = parts.next()?.trim_start_matches('-').split(',').next()?.parse().ok()?;
+    let new_start = parts.next()?.trim_start_matches('+').split(',').next()?.parse().ok()?;
+    Some((old_start, new_start))
 }
 
 fn check_run_to_row(run: &models::checks::CheckRun) -> PrCheckRun {
@@ -296,5 +397,49 @@ fn check_run_to_row(run: &models::checks::CheckRun) -> PrCheckRun {
         name: run.name.clone(),
         state: state.to_string(),
         detail,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_added_removed_and_context_lines_with_correct_line_numbers() {
+        let patch = "@@ -12,3 +12,4 @@ mod watcher\n context\n-old line\n+new line\n+another new line\n context again";
+        let rows = parse_patch(patch);
+
+        assert!(matches!(
+            &rows[0],
+            DiffRow::Hunk { range, context }
+                if range == "@@ -12,3 +12,4 @@" && context == "mod watcher"
+        ));
+        assert!(matches!(
+            &rows[1],
+            DiffRow::Ctx { old_line: Some(12), new_line: Some(12), text } if text == "context"
+        ));
+        assert!(matches!(
+            &rows[2],
+            DiffRow::Del { old_line: Some(13), new_line: None, text } if text == "old line"
+        ));
+        assert!(matches!(
+            &rows[3],
+            DiffRow::Add { old_line: None, new_line: Some(13), text } if text == "new line"
+        ));
+        assert!(matches!(
+            &rows[4],
+            DiffRow::Add { old_line: None, new_line: Some(14), text } if text == "another new line"
+        ));
+        assert!(matches!(
+            &rows[5],
+            DiffRow::Ctx { old_line: Some(14), new_line: Some(15), text } if text == "context again"
+        ));
+    }
+
+    #[test]
+    fn ignores_no_newline_at_end_of_file_marker() {
+        let patch = "@@ -1,1 +1,1 @@\n-old\n+new\n\\ No newline at end of file";
+        let rows = parse_patch(patch);
+        assert_eq!(rows.len(), 3, "the \\ marker line should not become a row");
     }
 }

@@ -105,6 +105,8 @@ export interface PrSummary {
 	reviewComments: PrCommentRow[];
 	checks: PrCheckRun[];
 	commits: PrCommitRow[];
+	files: FileEntry[];
+	diffs: Record<string, DiffLine[]>;
 }
 
 export interface PrListItem {

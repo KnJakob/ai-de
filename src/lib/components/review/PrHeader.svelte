@@ -7,7 +7,6 @@
 	import MessageSquareText from '@lucide/svelte/icons/message-square-text';
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import GitCommitHorizontal from '@lucide/svelte/icons/git-commit-horizontal';
-	import { FILES } from '$lib/mock/data';
 	import type { ReviewState } from '$lib/state.svelte';
 	import { formatRelativeTime } from '$lib/types';
 	import type { PrSummary, PrTab } from '$lib/types';
@@ -15,10 +14,9 @@
 
 	let { state, pr }: { state: ReviewState; pr: PrSummary } = $props();
 
-	// Files-changed stays mock for now (see TODO.md) — its tab count does too.
 	const prTabs: { id: PrTab; label: string; Icon: typeof GitPullRequest; count: number }[] = $derived([
 		{ id: 'conversation', label: 'Conversation', Icon: MessageSquareText, count: pr.comments.length + pr.reviewComments.length },
-		{ id: 'files', label: 'Files changed', Icon: FileCode, count: FILES.length },
+		{ id: 'files', label: 'Files changed', Icon: FileCode, count: pr.files.length },
 		{ id: 'commits', label: 'Commits', Icon: GitCommitHorizontal, count: pr.commits.length },
 		{ id: 'checks', label: 'Checks', Icon: CircleCheck, count: pr.checks.length }
 	]);

@@ -164,7 +164,7 @@ fn delta_path(delta: &git2::DiffDelta) -> String {
         .unwrap_or_default()
 }
 
-fn split_path(path: &str) -> (String, String) {
+pub(crate) fn split_path(path: &str) -> (String, String) {
     match path.rsplit_once('/') {
         Some((dir, name)) => (dir.to_string(), name.to_string()),
         None => (String::new(), path.to_string()),

@@ -14,11 +14,6 @@ data from `src/lib/mock/data.ts`.
 - `CommitLogView.svelte` (History mode only now) — fake commit log, not
   `git log`.
 - `BlamePanel.svelte` — fake blame data, not `git blame`.
-- The PR mode "Files changed" tab — still `src/lib/mock/data.ts`'s `FILES`/
-  `DIFFS` (same fake `watcher.rs` diff regardless of the real PR). Real PR
-  file diffs need parsing GitHub's unified-diff `patch` text into the same
-  `DiffRow` shape `git2` already produces — deliberately deferred, see
-  "Real PR overview" below.
 
 PR header/conversation/checks/commits are real now (see below) — the
 `PR`/`TIMELINE`/`DIFF_SNIPPETS` mock constants and their one-off types were
@@ -35,19 +30,19 @@ commands: `get_pr_list` lists every open PR (lightweight — number, title,
 author, head branch — flagging whichever one matches the current checked-
 out branch); `get_pr_details` fetches one PR's full title, author, body,
 issue + review comments (with `diff_hunk` snippets), check runs, and
-commits once the user picks it from the list. Verified against real GitHub
-API responses (octocrab's own repo, 5 real PRs) during development, and
-the full list→select→back flow verified in a real browser with a stubbed
-IPC bridge (can't exercise the real Tauri IPC outside the actual webview).
+commits once the user picks it from the list, plus the PR's changed files
+(GitHub's unified-diff `patch` text parsed into the same `DiffRow` shape
+`git2` already produces) for the "Files changed" tab. Verified against real
+GitHub API responses (octocrab's own repo, 5 real PRs) during development,
+and the full list→select→back flow verified in a real browser with a
+stubbed IPC bridge (can't exercise the real Tauri IPC outside the actual
+webview).
 
 Still explicitly out of scope:
 - **Approve / Request changes / Comment** (`PrHeader.svelte` /
   `PrConversationView.svelte`) — still call `state.approve()` /
   `requestChanges()` / `postReply()`, which only flip local UI state. No
   write calls to the GitHub API exist yet.
-- **Files changed** tab (see above).
-- **Sign-out** — `github_sign_out` command exists but nothing in the UI
-  calls it yet; there's no way to switch GitHub accounts from the app.
 
 ## Buttons that update local UI state only (look real, aren't)
 
