@@ -46,13 +46,18 @@
 			<Keyboard size={15} />
 		</button>
 		<button
-			onclick={() => state.loadLiveDiff()}
-			disabled={state.liveDiffLoading}
+			onclick={() => state.refresh()}
+			disabled={state.liveDiffLoading || state.prListLoading || state.prDetailsLoading}
 			title="Refresh from Git"
 			class="flex h-[24px] w-[26px] items-center justify-center rounded disabled:opacity-50"
 			style="color:var(--color-neutral-500)"
 		>
-			<RefreshCw size={15} class={state.liveDiffLoading ? 'animate-spin' : ''} />
+			<RefreshCw
+				size={15}
+				class={state.liveDiffLoading || state.prListLoading || state.prDetailsLoading
+					? 'animate-spin'
+					: ''}
+			/>
 		</button>
 		<button
 			title="Settings"
